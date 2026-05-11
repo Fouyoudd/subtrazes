@@ -12,6 +12,7 @@ const app = express();
 
 app.use(cors({
   origin: [
+    "https://subtrack.surge.sh",
     "http://127.0.0.1:5500",
     "http://localhost:5500",
     "http://localhost:3000",
@@ -289,7 +290,8 @@ if (upsertError) {
   console.log("Token saved to Supabase for user:", userId);
 }
 
-    res.redirect(`http://127.0.0.1:5500/index.html?gmail=connected&user=${userId}#/app/notifications`);
+    
+    res.redirect(`https://subtrack.surge.sh/index.html?gmail=connected&user=${userId}#/app/notifications`);
   } catch (error) {
     console.error("OAuth callback error:", error);
     res.status(500).json({ error: error.message });
