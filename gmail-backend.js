@@ -576,8 +576,8 @@ app.listen(PORT, () => {
 
 const schedule = require('node-schedule');
 
-// Run every 30 minutes
-schedule.scheduleJob('*/30 * * * *', async function() {
+// Run every 5 minutes
+schedule.scheduleJob('*/5 * * * *', async function() {
   console.log('Running scheduled Gmail scan...');
   
   try {
