@@ -1,0 +1,28 @@
+{
+  "name": "subtracks-gmail-backend",
+  "version": "1.0.0",
+  "description": "Gmail OAuth + subscription detection backend for SubChecks",
+  "main": "gmail-backend.js",
+  "scripts": {
+    "start": "node gmail-backend.js",
+    "dev": "nodemon gmail-backend.js"
+  },
+  "keywords": [
+    "gmail",
+    "oauth",
+    "subscriptions"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
+    "axios": "^1.6.0",
+    "cors": "^2.8.6",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "googleapis": "^118.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

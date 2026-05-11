@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SubTrack Pro — Free for New Users</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="c0b80ed0-6aca-4de0-bfd4-6e6b3ef70846"></script>
+</head>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green: #16a34a;
+  --green-2: #22c55e;
+  --green-glow: rgba(22,163,74,0.18);
+  --ink: #0f172a;
+  --ink-2: #334155;
+  --muted: #64748b;
+  --line: #e5e7eb;
+}
+
+body {
+  min-height: 100vh;
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 18% 8%,  rgba(22,163,74,0.13), transparent 30%),
+    radial-gradient(circle at 84% 14%, rgba(34,197,94,0.09), transparent 28%),
+    radial-gradient(circle at 50% 95%, rgba(16,185,129,0.10), transparent 30%),
+    linear-gradient(180deg, #f3fbf5 0%, #eaf8ef 100%);
+  padding: 28px 16px 72px;
+}
+
+/* Brand */
+.brand {
+  display: inline-flex; align-items: center; gap: 10px;
+  color: var(--ink); text-decoration: none;
+  font-weight: 900; font-size: 15px; margin-bottom: 28px;
+}
+.logo-wrap {
+  width: 36px; height: 36px; border-radius: 11px;
+  overflow: hidden; flex: 0 0 auto;
+  box-shadow: 0 8px 20px var(--green-glow);
+}
+.logo-wrap img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+.shell { width: min(1040px, 100%); margin: 0 auto; }
+
+/* Card */
+.checkout-card {
+  background: rgba(255,255,255,0.97);
+  border: 1px solid rgba(148,163,184,0.22);
+  border-radius: 28px;
+  box-shadow: 0 28px 80px rgba(15,23,42,0.11);
+  overflow: hidden;
+}
+.grid { display: grid; grid-template-columns: 1.3fr 0.75fr; }
+
+/* Left */
+.left { padding: 40px 40px 48px; }
+
+.status-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 999px; padding: 6px 13px;
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  color: var(--green); font-size: 11px; font-weight: 800;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  border: 1px solid rgba(22,163,74,0.18);
+}
+.pulse {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green); animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.3); }
+}
+
+h1 {
+  margin-top: 16px;
+  font-size: clamp(32px, 4vw, 52px);
+  line-height: 1; letter-spacing: -0.055em; color: var(--ink);
+}
+
+.lead {
+  margin-top: 14px; max-width: 600px;
+  color: var(--muted); font-size: 15px; line-height: 1.72;
+}
+
+/* Chip */
+.account-chip {
+  display: inline-flex; align-items: center; gap: 10px;
+  margin-top: 20px; padding: 10px 14px;
+  border: 1px solid var(--line); border-radius: 14px;
+  background: #fff; box-shadow: 0 4px 14px rgba(15,23,42,0.05);
+}
+.chip-av {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--ink); color: #fff;
+  font-size: 12px; font-weight: 900;
+  display: grid; place-items: center; flex: 0 0 auto;
+}
+.chip-name { font-size: 13px; font-weight: 700; color: var(--ink); }
+.chip-email { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* Form card */
+.form-card {
+  margin-top: 22px; border: 1px solid var(--line);
+  border-radius: 20px; padding: 20px; background: #fafcff;
+}
+.form-head { font-size: 15px; font-weight: 800; color: var(--ink); }
+.form-sub { margin-top: 4px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+.field { margin-top: 16px; }
+.field label {
+  display: block; margin-bottom: 6px;
+  font-size: 11px; font-weight: 800; color: var(--ink-2);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.field input {
+  width: 100%; border: 1px solid #dbe4ef; background: #fff;
+  border-radius: 12px; padding: 12px 14px; font-size: 14px;
+  font-family: inherit; color: var(--ink); outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.field input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 4px rgba(22,163,74,0.10);
+}
+.field-note { margin-top: 7px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* Submit btn */
+.submit-btn {
+  width: 100%; margin-top: 18px; padding: 14px 20px;
+  border: none; border-radius: 14px; font-size: 14px; font-weight: 800;
+  cursor: pointer; font-family: inherit;
+  transition: transform 0.18s, opacity 0.18s, box-shadow 0.18s;
+  background: linear-gradient(135deg, var(--green), var(--green-2));
+  color: #fff; box-shadow: 0 10px 28px rgba(22,163,74,0.25);
+}
+.submit-btn:disabled {
+  background: #e2e8f0; color: #94a3b8;
+  cursor: not-allowed; box-shadow: none; transform: none;
+}
+.submit-btn:not(:disabled):hover {
+  transform: translateY(-2px); box-shadow: 0 16px 36px rgba(22,163,74,0.32);
+}
+
+/* Steps */
+.steps { display: grid; gap: 10px; margin-top: 22px; }
+.step {
+  display: flex; align-items: flex-start; gap: 12px;
+  border: 1px solid var(--line); background: #f8fafc;
+  border-radius: 14px; padding: 14px;
+}
+.step-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--green), var(--green-2));
+  color: #fff; font-size: 11px; font-weight: 900;
+  display: grid; place-items: center; flex: 0 0 auto;
+}
+.step strong { display: block; font-size: 13px; color: var(--ink); }
+.step span { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* Right / Order */
+.order {
+  background: var(--ink); color: #fff;
+  padding: 36px 32px 40px;
+  display: flex; flex-direction: column;
+}
+.order-label {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: rgba(255,255,255,0.45);
+  margin-bottom: 16px;
+}
+.order-price { font-size: 52px; font-weight: 900; letter-spacing: -0.06em; color: #4ade80; line-height: 1; }
+.order-was { margin-top: 6px; font-size: 13px; color: rgba(255,255,255,0.4); }
+.order-divider { border: none; border-top: 1px solid rgba(255,255,255,0.10); margin: 20px 0; }
+
+.order-row {
+  display: flex; justify-content: space-between; gap: 12px;
+  font-size: 13px; padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.7);
+}
+.order-row strong { color: #fff; }
+
+.order-total {
+  display: flex; justify-content: space-between; gap: 12px;
+  font-size: 15px; font-weight: 800; padding-top: 14px; color: #fff;
+}
+.order-total .free { color: #4ade80; }
+
+.order-msg {
+  display: none; margin-top: 12px; padding: 11px 14px;
+  border-radius: 12px; font-size: 13px; line-height: 1.5; font-weight: 600;
+}
+.order-msg.error { background: rgba(239,68,68,0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.22); }
+.order-msg.success { background: rgba(74,222,128,0.12); color: #4ade80; border: 1px solid rgba(74,222,128,0.22); }
+.order-msg.show { display: block; }
+
+.order-submit {
+  width: 100%; margin-top: 20px; padding: 15px 18px;
+  border: none; border-radius: 14px; font-size: 14px; font-weight: 800;
+  cursor: pointer; font-family: inherit;
+  background: #fbbf24; color: var(--ink);
+  transition: transform 0.18s, box-shadow 0.18s;
+  box-shadow: 0 10px 28px rgba(251,191,36,0.28);
+}
+.order-submit:disabled {
+  background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.3);
+  cursor: not-allowed; box-shadow: none;
+}
+.order-submit:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(251,191,36,0.38); }
+
+.order-back {
+  width: 100%; margin-top: 10px; padding: 13px 18px;
+  border: 1px solid rgba(255,255,255,0.16); border-radius: 14px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  font-family: inherit; background: transparent; color: rgba(255,255,255,0.65);
+  transition: background 0.18s, color 0.18s;
+}
+.order-back:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+.order-note {
+  margin-top: 16px; font-size: 11px; line-height: 1.6;
+  color: rgba(255,255,255,0.35);
+}
+
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  display: inline-block; width: 13px; height: 13px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle; margin-right: 6px;
+}
+.spinner.dark {
+  border: 2px solid rgba(15,23,42,0.2);
+  border-top-color: var(--ink);
+}
+
+/* Success overlay */
+.overlay {
+  display: none; position: fixed; inset: 0; z-index: 9999;
+  align-items: center; justify-content: center; padding: 20px;
+  background: rgba(15,23,42,0.58); backdrop-filter: blur(10px);
+}
+.overlay.show { display: flex; }
+.overlay-card {
+  width: min(440px, 100%); background: #0f172a;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 24px; padding: 36px 32px; text-align: center;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.55);
+  animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes popIn { from { opacity:0; transform:scale(0.88); } to { opacity:1; transform:scale(1); } }
+.overlay-icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--green), var(--green-2));
+  display: grid; place-items: center; margin: 0 auto 18px;
+  font-size: 28px; box-shadow: 0 16px 40px rgba(22,163,74,0.35);
+}
+.overlay-card h2 { color: #fff; font-size: 22px; letter-spacing: -0.03em; margin-bottom: 10px; }
+.overlay-card p { color: rgba(255,255,255,0.65); font-size: 14px; line-height: 1.7; margin-bottom: 20px; }
+.overlay-confirm {
+  background: rgba(74,222,128,0.10); border: 1px solid rgba(74,222,128,0.25);
+  border-radius: 12px; padding: 12px; margin-bottom: 20px;
+}
+.overlay-confirm strong { color: #4ade80; font-size: 13px; display: block; }
+.overlay-dash {
+  width: 100%; padding: 14px; border: none; border-radius: 13px;
+  background: linear-gradient(135deg, var(--green), var(--green-2));
+  color: #fff; font-size: 14px; font-weight: 800; cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 10px 28px rgba(22,163,74,0.3);
+  transition: transform 0.18s;
+}
+.overlay-dash:hover { transform: translateY(-2px); }
+
+@media (max-width: 860px) {
+  .grid { grid-template-columns: 1fr; }
+  .left, .order { padding: 28px 24px 32px; }
+}
+@media (max-width: 480px) {
+  body { padding: 16px 12px 60px; }
+  .left, .order { padding: 22px 18px 28px; }
+}
+</style>
+<body>
+
+<div class="shell">
+  <a class="brand" href="index.html#/app/billing">
+    <span class="logo-wrap">
+      <img src="https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png" alt="SubTrack" onerror="this.style.display='none'">
+    </span>
+    SubTrack
+  </a>
+
+  <div class="checkout-card">
+    <div class="grid">
+
+      <!-- LEFT -->
+      <section class="left">
+        <span class="status-pill"><span class="pulse"></span>🎉 Lifetime Pro — 100% Free</span>
+
+        <h1>Get SubTrack Pro<br>for Free</h1>
+
+        <p class="lead">
+          Pro is completely free for new users during our beta. Confirm your Gmail, drop a quick note, and we'll activate Pro on your account within 24 hours — no payment ever.
+          <br><br>
+          <strong style="color:var(--green);">Normally $15 — free for you today.</strong>
+        </p>
+
+        <div class="account-chip">
+          <div class="chip-av" id="chipAv">SC</div>
+          <div>
+            <div class="chip-name" id="chipName">SubTrack user</div>
+            <div class="chip-email" id="chipEmail">Enter your Gmail below</div>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <div class="form-head">Confirm your access details</div>
+          <div class="form-sub">Your request goes directly to our inbox — we activate Pro within 24 hours. No payment, no third-party forms.</div>
+
+          <div class="field">
+            <label for="iName">Your name</label>
+            <input type="text" id="iName" placeholder="e.g. Alex Santos" autocomplete="name" />
+          </div>
+
+          <div class="field">
+            <label for="iEmail">SubTrack Gmail</label>
+            <input type="email" id="iEmail" placeholder="your@gmail.com" autocomplete="email" />
+          </div>
+
+          <div class="field">
+            <label for="iFeedback">Quick feedback <span style="font-weight:600;opacity:0.55;text-transform:none;font-size:10px;letter-spacing:0">(required)</span></label>
+            <input type="text" id="iFeedback" placeholder="e.g. Great app! Found it via Twitter." />
+            <div class="field-note">One sentence on how you found us or what you think. Really helps during beta.</div>
+          </div>
+
+          <button class="submit-btn" id="leftBtn" disabled>Fill in your details above first</button>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div>
+              <strong>Enter your Gmail</strong>
+              <span>Use the Gmail linked to your SubTrack account.</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div>
+              <strong>Leave quick feedback</strong>
+              <span>One sentence — how you found us or what you think.</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div>
+              <strong>Submit — Pro activated within 24 hrs</strong>
+              <span>Request goes directly to our inbox. 100% free, no payment needed.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT / ORDER -->
+      <aside class="order">
+        <div class="order-label">Order Summary</div>
+        <div class="order-price">FREE</div>
+        <div class="order-was"><s style="opacity:0.35">$15.00</s> &nbsp; 100% free for new users</div>
+
+        <hr class="order-divider">
+
+        <div class="order-row"><span>SubTrack Lifetime Pro</span><strong>$0.00</strong></div>
+        <div class="order-row"><span>Billing</span><strong>One-time</strong></div>
+        <div class="order-row"><span>Renewal</span><strong>None — ever</strong></div>
+
+        <div class="order-total">
+          <span>Total due today</span>
+          <span class="free">$0 FREE</span>
+        </div>
+
+        <div class="order-msg" id="orderMsg"></div>
+
+        <button class="order-submit" id="orderBtn" disabled>Fill in your details first</button>
+        <button class="order-back" id="backBtn">← Back to SubTrack</button>
+
+        <p class="order-note">
+          Beta: Pro is manually activated within 24 hours. No payment ever required — genuinely free for you.
+        </p>
+      </aside>
+
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="overlay-card">
+    <div class="overlay-icon">✓</div>
+    <h2>Request sent!</h2>
+    <p>
+      We received your Pro activation request.
+      <strong style="color:#4ade80;"> Pro will be active on your account within 24 hours.</strong>
+      <br><br>
+      Watch your Gmail — we'll confirm once it's live.
+    </p>
+    <div class="overlay-confirm">
+      <strong>✓ Request received — <span id="confirmEmail"></span></strong>
+    </div>
+    <button class="overlay-dash" id="dashBtn">Go to Dashboard →</button>
+  </div>
+</div>
+
+<script>
+/* =====================================================
+   SubTrack Pro Checkout
+   Sends request to owner Gmail via two methods:
+   1) Web3Forms API (free, real emails, no backend)
+   2) mailto: fallback (always works)
+   ===================================================== */
+
+const OWNER_EMAIL     = "clydebusinessnarido@gmail.com";
+
+// ─── Web3Forms: get a free access key at web3forms.com ───────────────────────
+// Sign up free → verify email → copy your access key → paste below
+// Your access key routes submissions to OWNER_EMAIL above.
+// Leave as-is and it falls back to mailto automatically.
+const W3F_ACCESS_KEY  = "YOUR_WEB3FORMS_ACCESS_KEY";
+
+const STORAGE_KEY     = "sc_pro_request_v2";
+
+// ── URL params (passed from app) ──────────────────────────────────────────────
+const qp      = new URLSearchParams(location.search);
+const urlEmail = qp.get("email")   || "";
+const urlName  = qp.get("name")    || "";
+const urlUID   = qp.get("user_id") || "";
+
+// ── DOM ───────────────────────────────────────────────────────────────────────
+const iName     = document.getElementById("iName");
+const iEmail    = document.getElementById("iEmail");
+const iFeedback = document.getElementById("iFeedback");
+const leftBtn   = document.getElementById("leftBtn");
+const orderBtn  = document.getElementById("orderBtn");
+const backBtn   = document.getElementById("backBtn");
+const orderMsg  = document.getElementById("orderMsg");
+const chipAv    = document.getElementById("chipAv");
+const chipName  = document.getElementById("chipName");
+const chipEmail = document.getElementById("chipEmail");
+const overlay   = document.getElementById("overlay");
+const confirmEmail = document.getElementById("confirmEmail");
+const dashBtn   = document.getElementById("dashBtn");
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function validEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim()); }
+
+function initials(s) {
+  const v = String(s || "SC").trim();
+  if (!v) return "SC";
+  if (v.includes("@")) return v[0].toUpperCase();
+  const p = v.split(" ").filter(Boolean);
+  return p.length >= 2 ? (p[0][0] + p[1][0]).toUpperCase() : v.slice(0, 2).toUpperCase();
+}
+
+function showMsg(text, type) {
+  orderMsg.textContent = text;
+  orderMsg.className   = "order-msg " + type + " show";
+}
+function hideMsg() { orderMsg.className = "order-msg"; }
+
+function setLoading(on) {
+  const s = '<span class="spinner dark"></span>';
+  leftBtn.innerHTML   = on ? s + "Sending…" : (formReady() ? "Submit &amp; Activate Pro ✓" : "Fill in your details above first");
+  orderBtn.innerHTML  = on ? '<span class="spinner"></span>Sending…' : (formReady() ? "Submit &amp; Activate Pro ✓" : "Fill in your details first");
+  leftBtn.disabled    = on || !formReady();
+  orderBtn.disabled   = on || !formReady();
+}
+
+function formReady() {
+  return validEmail(iEmail.value) && iFeedback.value.trim().length >= 3;
+}
+
+function updateChip() {
+  chipAv.textContent    = initials(iName.value.trim() || iEmail.value.trim() || "SC");
+  chipName.textContent  = iName.value.trim() || "SubTrack user";
+  chipEmail.textContent = iEmail.value.trim() || "Enter your Gmail below";
+}
+
+function updateReady() {
+  const ok    = formReady();
+  const label = ok ? "Submit &amp; Activate Pro ✓" : "Fill in your details above first";
+  leftBtn.innerHTML  = label;
+  leftBtn.disabled   = !ok;
+  orderBtn.innerHTML = ok ? "Submit &amp; Activate Pro ✓" : "Fill in your details first";
+  orderBtn.disabled  = !ok;
+}
+
+function saveDraft() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      name:     iName.value.trim(),
+      email:    iEmail.value.trim(),
+      feedback: iFeedback.value.trim(),
+      uid:      urlUID,
+      at:       new Date().toISOString()
+    }));
+  } catch {}
+}
+
+function loadDraft() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch { return {}; }
+}
+
+function emailBody(d) {
+  return [
+    "SubTrack Pro Activation Request",
+    "=================================",
+    "",
+    "Name:      " + (d.name || "Not provided"),
+    "Gmail:     " + d.email,
+    "User ID:   " + (d.uid  || "N/A"),
+    "",
+    "Feedback:",
+    d.feedback,
+    "",
+    "Submitted: " + new Date().toLocaleString(),
+    "",
+    "─────────────────────────────────",
+    "Please activate Pro access for this Gmail within 24 hours.",
+    "— SubTrack Pro Checkout"
+  ].join("\n");
+}
+
+// ── Submit ────────────────────────────────────────────────────────────────────
+async function handleSubmit() {
+  const d = {
+    name:     iName.value.trim(),
+    email:    iEmail.value.trim(),
+    feedback: iFeedback.value.trim(),
+    uid:      urlUID
+  };
+
+  if (!validEmail(d.email)) { showMsg("Please enter a valid Gmail address.", "error"); return; }
+  if (d.feedback.length < 3) { showMsg("Please add a quick bit of feedback!", "error"); return; }
+
+  hideMsg();
+  saveDraft();
+  setLoading(true);
+
+  let sent = false;
+
+  // ── 1. Web3Forms (real email, free, no backend) ──────────────────────────────
+  // Requires a free access key from web3forms.com — takes 30 seconds to set up.
+  // Your key routes the submission to OWNER_EMAIL above automatically.
+  if (W3F_ACCESS_KEY !== "YOUR_WEB3FORMS_ACCESS_KEY") {
+    try {
+      const res = await fetch("https://api.web3forms.com/submit", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body:    JSON.stringify({
+          access_key: W3F_ACCESS_KEY,
+          from_name:  d.name || "SubTrack User",
+          subject:    "[SubTrack Pro Request] " + d.email,
+          email:      d.email,           // reply-to address
+          message:    emailBody(d)
+        })
+      });
+      const json = await res.json();
+      if (json.success) sent = true;
+    } catch {}
+  }
+
+  // ── 2. mailto: fallback (opens Gmail / default email app, always works) ──────
+  if (!sent) {
+    const sub  = encodeURIComponent("[SubTrack Pro Request] " + d.email);
+    const body = encodeURIComponent(emailBody(d));
+    const a    = document.createElement("a");
+    a.href     = "mailto:" + OWNER_EMAIL + "?subject=" + sub + "&body=" + body;
+    a.target   = "_blank";
+    a.rel      = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    sent = true;
+  }
+
+  setLoading(false);
+
+  if (sent) {
+    confirmEmail.textContent = d.email;
+    overlay.classList.add("show");
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  } else {
+    showMsg("Something went wrong — please email " + OWNER_EMAIL + " directly.", "error");
+  }
+}
+
+// ── Events ────────────────────────────────────────────────────────────────────
+iName.addEventListener("input",     () => { updateChip(); updateReady(); });
+iEmail.addEventListener("input",    () => { updateChip(); updateReady(); });
+iFeedback.addEventListener("input", updateReady);
+
+leftBtn.addEventListener("click",  handleSubmit);
+orderBtn.addEventListener("click", handleSubmit);
+backBtn.addEventListener("click",  () => { location.href = "index.html#/app/billing"; });
+dashBtn.addEventListener("click",  () => { location.href = "index.html#/app/dashboard"; });
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+(function boot() {
+  const draft    = loadDraft();
+  iName.value    = urlName  || draft.name     || "";
+  iEmail.value   = urlEmail || draft.email    || "";
+  iFeedback.value = draft.feedback || "";
+  updateChip();
+  updateReady();
+
+  // Replace any .logo-wrap img that fails to load
+  document.querySelectorAll(".logo-wrap img").forEach(img => {
+    img.onerror = () => {
+      img.parentElement.style.background = "#16a34a";
+      img.style.display = "none";
+    };
+  });
+})();
+</script>
+</body>
+</html>

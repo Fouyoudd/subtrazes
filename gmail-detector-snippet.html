@@ -1,0 +1,537 @@
+<!-- ============================================================
+  SubTrack — Gmail Receipt Detector
+  Paste this entire block before </body> in index.html
+
+  WHAT THIS DOES:
+  1. Adds a "Test Gmail Scan" button to the dashboard
+  2. Calls your Express backend test route
+  3. Shows a browser push notification (if permission granted)
+  4. Shows an in-app detection card for each subscription found
+  5. "Add Subscription" button opens the existing #modal
+  6. Auto-fills: subName, subAmount, subDate, subProject, subStatus
+  7. User still manually clicks the final save button
+  ============================================================ -->
+
+<style>
+  /* ── Floating scan button ── */
+  #gmailScanBtn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 900;
+    display: none; /* shown only when app is active — see JS */
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(34,197,94,0.35);
+    transition: transform .15s, box-shadow .15s;
+  }
+  #gmailScanBtn:hover  { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(34,197,94,0.4); }
+  #gmailScanBtn:active { transform: scale(0.97); }
+  #gmailScanBtn.loading { opacity: .7; pointer-events: none; }
+
+  /* ── Detection cards container ── */
+  #scDetectStack {
+    position: fixed;
+    top: 66px;        /* just below the sticky nav */
+    right: 18px;
+    z-index: 950;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(370px, calc(100vw - 36px));
+    pointer-events: none; /* cards themselves re-enable */
+  }
+
+  /* ── Single detection card ── */
+  .sc-detect-card {
+    pointer-events: all;
+    background: #fff;
+    border: 1px solid #d1fae5;
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 12px 36px rgba(15,23,42,0.14);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    animation: scSlideIn .35s cubic-bezier(0.175,0.885,0.32,1.275) both;
+  }
+  @keyframes scSlideIn {
+    from { opacity:0; transform: translateX(30px) scale(0.95); }
+    to   { opacity:1; transform: translateX(0)   scale(1);    }
+  }
+  .sc-detect-card.removing {
+    animation: scSlideOut .28s ease forwards;
+  }
+  @keyframes scSlideOut {
+    to { opacity:0; transform: translateX(30px) scale(0.95); max-height:0; padding:0; margin:0; }
+  }
+
+  .sc-card-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .sc-app-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
+    display: grid;
+    place-items: center;
+    font-size: 24px;
+    flex: 0 0 auto;
+  }
+  .sc-card-text { flex: 1; min-width: 0; }
+  .sc-card-source {
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #16a34a;
+    margin-bottom: 2px;
+  }
+  .sc-card-title {
+    font-size: 14px;
+    font-weight: 900;
+    color: #111827;
+    line-height: 1.25;
+  }
+  .sc-card-sub {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+  }
+  .sc-card-dismiss {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    border: none;
+    color: #94a3b8;
+    font-size: 16px;
+    font-weight: 900;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    line-height: 1;
+    transition: background .15s;
+  }
+  .sc-card-dismiss:hover { background: #fee2e2; color: #dc2626; }
+
+  /* autofill preview chips */
+  .sc-autofill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .sc-chip {
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(34,197,94,0.10);
+    border: 1px solid rgba(34,197,94,0.22);
+    font-size: 11px;
+    font-weight: 700;
+    color: #16a34a;
+  }
+
+  /* action buttons */
+  .sc-card-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .sc-btn-add {
+    padding: 10px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
+    border: none;
+    cursor: pointer;
+    transition: transform .15s;
+  }
+  .sc-btn-add:active { transform: scale(0.97); }
+  .sc-btn-skip {
+    padding: 10px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .sc-btn-skip:hover { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
+
+  /* mobile: stack at bottom */
+  @media (max-width: 600px) {
+    #scDetectStack {
+      top: auto;
+      bottom: 80px; /* above mobile nav */
+      right: 0;
+      left: 0;
+      width: 100%;
+      padding: 0 12px;
+    }
+    #gmailScanBtn {
+      bottom: 80px;
+    }
+  }
+</style>
+
+<!-- Floating scan button (appears inside the app) -->
+<button id="gmailScanBtn">
+  📬 Test Gmail Scan
+</button>
+
+<!-- Detection cards will be injected here -->
+<div id="scDetectStack"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── CONFIG ────────────────────────────────────────────────────
+  // Your Express backend test route
+  const BACKEND_URL = 'http://localhost:3001/api/scan-gmail/guest?test=1';
+
+function formatDateForInput(value) {
+  if (!value) return nextMonthDate();
+
+  const parsed = new Date(value);
+
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toISOString().slice(0, 10);
+  }
+
+  return nextMonthDate();
+}
+
+  // Next billing date = today + 1 month
+  function nextMonthDate() {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1);
+    // Format as YYYY-MM-DD for the date input field
+    return d.toISOString().slice(0, 10);
+  }
+
+  // ── SHOW / HIDE THE SCAN BUTTON ───────────────────────────────
+  // Only show button when the user is inside the app (not on landing page)
+  // SubTrack adds class "app-on" to body when app is active
+  function syncButtonVisibility() {
+    const btn = document.getElementById('gmailScanBtn');
+    if (!btn) return;
+    const inApp = document.body.classList.contains('app-on');
+    btn.style.display = inApp ? 'inline-flex' : 'none';
+  }
+
+  // Watch for body class changes (SubTrack toggles app-on)
+  const bodyObserver = new MutationObserver(syncButtonVisibility);
+  bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  syncButtonVisibility(); // run once on load
+
+  // ── REQUEST BROWSER NOTIFICATION PERMISSION ───────────────────
+  function askNotifPermission() {
+    if (!('Notification' in window)) return Promise.resolve('unsupported');
+    if (Notification.permission === 'default') {
+      return Notification.requestPermission();
+    }
+    return Promise.resolve(Notification.permission);
+  }
+
+  // ── FIRE A BROWSER PUSH NOTIFICATION ─────────────────────────
+  function sendBrowserNotif(sub) {
+    if (Notification.permission !== 'granted') return;
+    try {
+      const n = new Notification('SubTrack — Subscription Detected 📬', {
+        body: `${sub.name} receipt found. Tap to add it to SubTrack.`,
+        icon: 'SubTrack-logo.png',  // uses your existing logo file
+        tag:  'subtrack-detect-' + sub.name, // prevents duplicate notifs
+        requireInteraction: true,   // stays until user clicks (desktop)
+      });
+      // Clicking the notification brings the tab into focus
+      n.onclick = function () {
+        window.focus();
+        n.close();
+        openModalWithData(sub);
+      };
+    } catch (e) {
+      console.warn('SubTrack notif error:', e);
+    }
+  }
+
+  // ── OPEN THE EXISTING #modal AND AUTO-FILL THE FORM ──────────
+  function openModalWithData(sub) {
+    // 1. Open the modal — try the existing [data-open] button first
+    const openTrigger = document.querySelector('[data-open]');
+    if (openTrigger) {
+      openTrigger.click();
+    } else {
+      // Fallback: directly show the modal
+      const modal = document.getElementById('modal');
+      if (modal) modal.classList.add('show');
+    }
+
+    // 2. Small delay so modal is visible before we fill fields
+    setTimeout(function () {
+      // Name — e.g. "Spotify"
+      const nameField = document.getElementById('subName');
+      if (nameField) {
+        nameField.value = sub.name || '';
+        nameField.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+
+      // Amount — strip currency symbols, keep numbers
+      const amountField = document.getElementById('subAmount');
+      if (amountField) {
+        const cleaned = String(sub.amount || sub.price || '')
+          .replace(/[^0-9.]/g, '');
+        amountField.value = cleaned;
+        amountField.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+
+      // Billing date — next month from today
+      const dateField = document.getElementById('subDate');
+      if (dateField) {
+        dateField.value = sub.nextBillingDate || nextMonthDate();
+        dateField.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      // Project — default to Personal
+      const projectField = document.getElementById('subProject');
+      if (projectField) {
+        // Try to match "Personal" option, fallback to first option
+        const options = Array.from(projectField.options);
+        const personal = options.find(o => o.text.toLowerCase() === 'personal');
+        projectField.value = personal ? personal.value : options[0]?.value || 'Personal';
+        projectField.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      // Status — Active
+      const statusField = document.getElementById('subStatus');
+      if (statusField) {
+        const options = Array.from(statusField.options);
+        const active = options.find(o => o.text.toLowerCase() === 'active');
+        statusField.value = active ? active.value : options[0]?.value || 'Active';
+        statusField.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      // Highlight the name field so user knows it's ready
+      if (nameField) nameField.focus();
+    }, 120);
+  }
+
+  // ── BUILD AND SHOW AN IN-APP DETECTION CARD ──────────────────
+  function showDetectCard(sub) {
+    const stack = document.getElementById('scDetectStack');
+    if (!stack) return;
+
+    // Map common service names to an icon + color
+    const iconMap = {
+      spotify:   { icon: '🎵', color: '#1DB954' },
+      netflix:   { icon: '🎬', color: '#E50914' },
+      youtube:   { icon: '▶️', color: '#FF0000' },
+      canva:     { icon: '🎨', color: '#7B61FF' },
+      adobe:     { icon: '🔴', color: '#FF0000' },
+      chatgpt:   { icon: '🤖', color: '#10a37f' },
+      notion:    { icon: '📓', color: '#374151' },
+      capcut:    { icon: '✂️', color: '#111111' },
+      duolingo:  { icon: '🦉', color: '#58CC02' },
+      microsoft: { icon: '💼', color: '#0068C8' },
+      amazon:    { icon: '📦', color: '#FF6900' },
+      figma:     { icon: '💡', color: '#4F46E5' },
+    };
+
+    const key     = (sub.name || '').toLowerCase().replace(/\s+/g, '');
+    const matched = Object.entries(iconMap).find(([k]) => key.includes(k));
+    const icon    = matched ? matched[1].icon  : '📧';
+    const color   = matched ? matched[1].color : '#16a34a';
+
+    // Format amount for display
+    const displayAmount = sub.amount
+  ? '$' + Number(sub.amount).toLocaleString()
+  : 'Amount unknown';
+
+    const billingDate = sub.nextBillingDate || nextMonthDate();
+    const displayDate = new Date(billingDate)
+      .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    // Build card HTML
+    const card = document.createElement('div');
+    card.className  = 'sc-detect-card';
+    card.dataset.id = sub.name; // used to remove it later
+    card.innerHTML  = `
+      <div class="sc-card-top">
+        <div class="sc-app-icon" style="background:${color}20;">${icon}</div>
+        <div class="sc-card-text">
+          <div class="sc-card-source">SubTrack · Gmail Detected</div>
+          <div class="sc-card-title">${sub.name} subscription found</div>
+          <div class="sc-card-sub">Receipt in your Gmail inbox</div>
+        </div>
+        <button class="sc-card-dismiss" title="Dismiss">×</button>
+      </div>
+
+      <div class="sc-autofill-row">
+        <span class="sc-chip">📛 ${sub.name}</span>
+        <span class="sc-chip">💰 ${displayAmount}</span>
+        <span class="sc-chip">📅 Next: ${displayDate}</span>
+        <span class="sc-chip">✅ Active</span>
+      </div>
+
+      <div class="sc-card-actions">
+        <button class="sc-btn-add">+ Add Subscription</button>
+        <button class="sc-btn-skip">Skip</button>
+      </div>
+    `;
+
+    // Wire up dismiss button
+    card.querySelector('.sc-card-dismiss').addEventListener('click', function () {
+      removeCard(card);
+    });
+
+    // Wire up skip button
+    card.querySelector('.sc-btn-skip').addEventListener('click', function () {
+      removeCard(card);
+    });
+
+    // Wire up Add Subscription button
+    card.querySelector('.sc-btn-add').addEventListener('click', function () {
+      removeCard(card);
+      openModalWithData(sub);
+    });
+
+    stack.appendChild(card);
+  }
+
+  // ── REMOVE A CARD WITH ANIMATION ─────────────────────────────
+  function removeCard(card) {
+    card.classList.add('removing');
+    card.addEventListener('animationend', function () {
+      card.remove();
+    }, { once: true });
+  }
+
+  // ── CLEAR ALL EXISTING CARDS ─────────────────────────────────
+  function clearAllCards() {
+    const stack = document.getElementById('scDetectStack');
+    if (stack) stack.innerHTML = '';
+  }
+
+  // ── CALL THE BACKEND AND PROCESS RESULTS ─────────────────────
+  async function runGmailScan() {
+    const btn = document.getElementById('gmailScanBtn');
+
+    // Show loading state
+    if (btn) {
+      btn.classList.add('loading');
+      btn.textContent = '⏳ Scanning...';
+    }
+
+    // Ask for notification permission (first scan only)
+    await askNotifPermission();
+
+    try {
+      // ── Call your Express backend test route ──
+      const res = await fetch(BACKEND_URL, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) {
+        throw new Error(`Backend returned ${res.status}. Is your server running at localhost:3001?`);
+      }
+
+      const data = await res.json();
+
+      // ── Normalise the response ──
+// Your backend returns: { detections: [...] }
+let rawFound = [];
+
+if (Array.isArray(data)) {
+  rawFound = data;
+} else if (Array.isArray(data.detections)) {
+  rawFound = data.detections;
+} else if (Array.isArray(data.subscriptions)) {
+  rawFound = data.subscriptions;
+} else if (Array.isArray(data.results)) {
+  rawFound = data.results;
+} else if (Array.isArray(data.data)) {
+  rawFound = data.data;
+}
+
+const found = rawFound.map(function (item) {
+  return {
+    name: item.name || item.serviceName || item.service || "Unknown Subscription",
+    amount: item.amount || item.price || "",
+    nextBillingDate: formatDateForInput(item.nextBillingDate || item.billingDate),
+    category: item.category || "Uncategorized",
+    cycle: item.cycle || "monthly"
+  };
+});
+
+      // ── No results ──
+      if (found.length === 0) {
+        showPop('No new subscription receipts found in Gmail.');
+        return;
+      }
+
+      // ── Clear old cards before showing new ones ──
+      clearAllCards();
+
+      // ── Process each detected subscription ──
+      found.forEach(function (sub) {
+        // Show in-app card
+        showDetectCard(sub);
+
+        // Fire browser notification
+        sendBrowserNotif(sub);
+      });
+
+      showPop(`✅ Found ${found.length} subscription${found.length > 1 ? 's' : ''} in Gmail!`);
+
+    } catch (err) {
+      console.error('SubTrack Gmail scan error:', err);
+      showPop('❌ Scan failed: ' + err.message);
+    } finally {
+      // Reset button
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.innerHTML = '📬 Test Gmail Scan';
+      }
+    }
+  }
+
+  // ── SHOW A TOAST (reuse existing SubTrack pop() if available) ─
+  function showPop(msg) {
+    // SubTrack already has a pop() function — use it if available
+    if (typeof pop === 'function') {
+      pop(msg);
+      return;
+    }
+    // Fallback: use the existing #toast element
+    const toast = document.getElementById('toast');
+    if (toast) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(window._scToastTimer);
+      window._scToastTimer = setTimeout(function () {
+        toast.classList.remove('show');
+      }, 3500);
+    }
+  }
+
+  // ── WIRE UP THE SCAN BUTTON ───────────────────────────────────
+  document.getElementById('gmailScanBtn').addEventListener('click', runGmailScan);
+
+})();
+</script>
