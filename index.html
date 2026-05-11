@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <link rel="manifest" href="/manifest.json">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>subtracks v5 Router Local Safe</title>
@@ -7315,6 +7316,42 @@ window.runGmailScan = runGmailScan;
 window.showDetectCard = showDetectCard;
 
 })();
+
+</script>
+
+<script>
+const VAPID_PUBLIC_KEY = 'BEbaOfvRDcU29f1VxvKDeZtlt38rbO4BqQyC-ZGNV0VaKapB2IQMeP2un7li6RotBb837qhOfw-EaEnjP0R6pDE';
+
+async function registerPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: VAPID_PUBLIC_KEY
+    });
+
+    const userId = localStorage.getItem('subtracks-user-id') || 'guest';
+    await fetch('https://subtracks-production.up.railway.app/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription: sub, userId })
+    });
+
+    console.log('Push subscription saved!');
+  } catch (err) {
+    console.warn('Push registration failed:', err);
+  }
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', registerPush);
+}
+
 </script>
 
 </body>

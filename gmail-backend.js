@@ -2,6 +2,13 @@
  * SubTrack Gmail Scanner Backend
  * Node.js/Express backend for Gmail OAuth + subscription receipt detection.
  */
+const webpush = require('web-push');
+
+webpush.setVapidDetails(
+  process.env.VAPID_EMAIL,
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
 
 const cors = require("cors");
 const express = require("express");
@@ -519,6 +526,46 @@ function decodeIdToken(token) {
 }
 
 const PORT = process.env.PORT || 3001;
+
+// Save push subscription
+app.post('/api/push/subscribe', async (req, res) => {
+  const { subscription, userId } = req.body;
+  if (!subscription || !userId) return res.status(400).json({ error: 'Missing data' });
+
+  const { error } = await supabase
+    .from('push_subscriptions')
+    .upsert({ user_id: userId, subscription: JSON.stringify(subscription), updated_at: new Date() });
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
+// Send test push
+app.post('/api/push/send-test', async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ error: 'Missing userId' });
+
+  const { data } = await supabase
+    .from('push_subscriptions')
+    .select('subscription')
+    .eq('user_id', userId)
+    .single();
+
+  if (!data) return res.status(404).json({ error: 'No subscription found' });
+
+  try {
+    await webpush.sendNotification(
+      JSON.parse(data.subscription),
+      JSON.stringify({
+        title: 'SubTracks 🔔',
+        body: 'Push notifications are working!'
+      })
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Gmail backend running on http://localhost:${PORT}`);
