@@ -573,3 +573,85 @@ app.listen(PORT, () => {
   console.log(`Google Client ID loaded: ${!!GOOGLE_CLIENT_ID}`);
   console.log(`Google Client Secret loaded: ${!!GOOGLE_CLIENT_SECRET}`);
 });
+
+const schedule = require('node-schedule');
+
+// Run every 30 minutes
+schedule.scheduleJob('*/30 * * * *', async function() {
+  console.log('Running scheduled Gmail scan...');
+  
+  try {
+    // Get all users with gmail tokens
+    const { data: users } = await supabase
+      .from('gmail_tokens')
+      .select('user_id');
+
+    if (!users || !users.length) return;
+
+    for (const user of users) {
+      await scanAndNotifyUser(user.user_id);
+    }
+  } catch (err) {
+    console.error('Scheduled scan error:', err);
+  }
+});
+
+async function scanAndNotifyUser(userId) {
+  try {
+    // Get push subscription
+    const { data: pushData } = await supabase
+      .from('push_subscriptions')
+      .select('subscription')
+      .eq('user_id', userId)
+      .single();
+
+    if (!pushData) return;
+
+    // Get gmail tokens
+    const { data: tokenData } = await supabase
+      .from('gmail_tokens')
+      .select('tokens')
+      .eq('user_id', userId)
+      .single();
+
+    if (!tokenData) return;
+
+    oauth2Client.setCredentials(tokenData.tokens);
+
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    const query = buildGmailQuery();
+
+    const messagesResponse = await gmail.users.messages.list({
+      userId: 'me',
+      q: query,
+      maxResults: 10
+    });
+
+    const messages = messagesResponse.data.messages || [];
+    if (!messages.length) return;
+
+    const fullMessages = await Promise.all(
+      messages.slice(0, 5).map(msg =>
+        gmail.users.messages.get({ userId: 'me', id: msg.id, format: 'full' })
+      )
+    );
+
+    const detections = parseEmailsForSubscriptions(fullMessages.map(r => r.data));
+    const unique = deduplicateByService(detections);
+
+    if (!unique.length) return;
+
+    // Send push for each detection
+    for (const detection of unique) {
+      await webpush.sendNotification(
+        JSON.parse(pushData.subscription),
+        JSON.stringify({
+          title: `SubTracks — ${detection.serviceName} detected 📬`,
+          body: `Receipt found. Tap to add it to SubTracks.`
+        })
+      );
+    }
+  } catch (err) {
+    console.error('Scan notify error for', userId, err.message);
+  }
+}

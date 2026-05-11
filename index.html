@@ -3011,6 +3011,10 @@ body.signin-on .homeFooter {
 </style>
 </head>
 <body>
+<div id="pushDebug" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#000;color:#0f0;font-size:11px;padding:8px;max-height:200px;overflow-y:auto;"></div>
+<button id="enablePushBtn" style="position:fixed;top:50px;left:0;right:0;z-index:99999;background:#16a34a;color:#fff;padding:16px;font-size:16px;font-weight:900;border:none;width:100%;">
+  🔔 Tap to Enable Notifications
+</button>
 <header class="top"><div class="wrap"><button class="brand" data-home><span class="logo" style="background:transparent;overflow:hidden;border-radius:8px;"><img src="https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png" alt="SubTracks logo" style="width:28px;height:28px;object-fit:contain;"></span><span>subtracks</span></button><nav class="links"><a href="#features">Features</a><a href="#how">How it works</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a><a href="#blog">Blog</a></nav><div class="actions"><button class="btn outline" data-signin>Sign in</button><button class="btn primary" data-signin>Get started</button></div></div></header>
 <main class="home"><section class="hero"><div class="wrap"><p class="eyebrow">Now in early access</p><h1>Track all your subscriptions. <span>Never miss a renewal.</span></h1><p class="copy">Keep every subscription in one place. Get reminded before renewals sneak up. Know exactly where your money goes.</p><div class="heroBtns"><button id="heroStartBtn" class="btn btn-primary" data-app>Start tracking free</button><button class="btn outline" data-demo>▶ Live Demo</button></div><div class="points"><span>✓ No credit card needed</span><span>✓ Free forever plan</span><span>✓ Setup in 2 minutes</span></div><div class="preview"><aside class="pSide"><div class="pLogo"><span class="logo" style="background:transparent;overflow:hidden;border-radius:6px;"><img src="https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png" alt="SubTracks logo" style="width:24px;height:24px;object-fit:contain;"></span><strong>subtracks</strong></div><p>Project</p><div class="pItem">All Projects</div><p>Main</p><div class="pItem on">Dashboard</div><p>Subscriptions</p><div class="pItem">My Subscriptions</div><div class="pItem">Analytics</div><div class="pItem">Categories</div><div class="pItem">Projects</div></aside><div class="pContent"><div class="pHead"><div><h3>My Subscriptions</h3><p>Manage and track all recurring payments in one place</p></div><button>+ Add Subscription</button></div><div class="pStats"><div><p>Monthly spend</p><strong>$2,298</strong><span>5 active subscriptions</span></div><div><p>Projects used</p><strong>4/6</strong><span>free projects</span></div><div><p>Active subs</p><strong>5</strong><span>0 in trial</span></div><div><p>Renewals</p><strong>2</strong><span>due soon</span></div></div><div class="pTable"><div class="pRow head"><span>Service</span><span>Project</span><span>Amount</span><span>Status</span></div><div class="pRow"><span>ChatGPT</span><span>Business</span><span>$1,100</span><span class="badge">Active</span></div><div class="pRow"><span>Netflix</span><span>Personal</span><span>$549</span><span class="badge">Active</span></div><div class="pRow"><span>CapCut Trial</span><span>Client A</span><span>Trial</span><span class="badge trial">Trial</span></div></div></div></div></div></section>
 <section class="section" id="features"><div class="wrap"><div class="sectionHead"><h2>Features made for subscription tracking</h2><p>Simple tools to track spending, trials, renewals, projects, and categories.</p></div><div class="grid3"><div class="mCard"><div class="num">01</div><h3>Unlimited subscriptions</h3><p>Add as many subscriptions as you need.</p></div><div class="mCard"><div class="num">02</div><h3>6 free projects</h3><p>Group subscriptions by client, business, personal, or school.</p></div><div class="mCard"><div class="num">03</div><h3>Calendar view</h3><p>See renewals and trial end dates by real month.</p></div><div class="mCard"><div class="num">04</div><h3>Analytics</h3><p>See category breakdown and project spending.</p></div><div class="mCard"><div class="num">05</div><h3>Trial tracking</h3><p>Track free trials before they become paid.</p></div><div class="mCard"><div class="num">06</div><h3>Spending trends</h3><p>See if costs are growing month by month.</p></div></div></div></section>
@@ -7322,36 +7326,58 @@ window.showDetectCard = showDetectCard;
 <script>
 const VAPID_PUBLIC_KEY = 'BEbaOfvRDcU29f1VxvKDeZtlt38rbO4BqQyC-ZGNV0VaKapB2IQMeP2un7li6RotBb837qhOfw-EaEnjP0R6pDE';
 
-async function registerPush() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-  
-  try {
-    const reg = await navigator.serviceWorker.register('/sw.js');
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') return;
+function debugLog(msg) {
+  const el = document.getElementById('pushDebug');
+  if (el) el.innerHTML += msg + '<br>';
+  console.log(msg);
+}
 
+async function registerPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    debugLog('Push not supported');
+    return;
+  }
+  try {
+    debugLog('Registering SW...');
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    debugLog('SW registered');
+    const permission = await Notification.requestPermission();
+    debugLog('Permission: ' + permission);
+    if (permission !== 'granted') return;
+    const existing = await reg.pushManager.getSubscription();
+    debugLog('Existing: ' + (existing ? 'yes' : 'no'));
+    if (existing) {
+      debugLog('Unsubscribing old...');
+      await existing.unsubscribe();
+    }
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: VAPID_PUBLIC_KEY
     });
-
+    debugLog('Subscribed!');
     const userId = localStorage.getItem('subtracks-user-id') || 'guest';
-    await fetch('https://subtracks-production.up.railway.app/api/push/subscribe', {
+    debugLog('userId: ' + userId);
+    const response = await fetch('https://subtracks-production.up.railway.app/api/push/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ subscription: sub, userId })
     });
-
-    console.log('Push subscription saved!');
+    const result = await response.json();
+    debugLog('Saved: ' + JSON.stringify(result));
   } catch (err) {
-    console.warn('Push registration failed:', err);
+    debugLog('ERROR: ' + err.message);
   }
 }
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', registerPush);
-}
-
+document.addEventListener('DOMContentLoaded', function() {
+  const btn = document.getElementById('enablePushBtn');
+  if (btn) {
+    btn.addEventListener('click', function() {
+      btn.style.display = 'none';
+      registerPush();
+    });
+  }
+});
 </script>
 
 </body>
