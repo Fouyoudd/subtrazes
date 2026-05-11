@@ -576,12 +576,11 @@ app.listen(PORT, () => {
 
 const schedule = require('node-schedule');
 
-// Run every 5 minutes
+// Replace your existing scheduler with this
 schedule.scheduleJob('*/5 * * * *', async function() {
   console.log('Running scheduled Gmail scan...');
   
   try {
-    // Get all users with gmail tokens
     const { data: users } = await supabase
       .from('gmail_tokens')
       .select('user_id');
@@ -596,9 +595,49 @@ schedule.scheduleJob('*/5 * * * *', async function() {
   }
 });
 
+// Gmail Pub/Sub webhook
+app.post('/api/gmail/webhook', async (req, res) => {
+  res.sendStatus(200); // Always respond 200 first
+
+  try {
+    const message = req.body?.message;
+    if (!message) return;
+
+    const data = JSON.parse(Buffer.from(message.data, 'base64').toString());
+    const email = data.emailAddress;
+
+    if (!email) return;
+
+    // Find user by email
+    const { data: tokenData } = await supabase
+      .from('gmail_tokens')
+      .select('user_id')
+      .eq('user_id', data.historyId || email)
+      .single();
+
+    // Scan all users when webhook fires
+    const { data: users } = await supabase
+      .from('gmail_tokens')
+      .select('user_id');
+
+    if (!users || !users.length) return;
+
+    for (const user of users) {
+      await scanAndNotifyUser(user.user_id);
+    }
+  } catch (err) {
+    console.error('Webhook error:', err);
+  }
+});
+
+create table notified_emails (
+  id text primary key,
+  user_id text,
+  created_at timestamp default now()
+);
+
 async function scanAndNotifyUser(userId) {
   try {
-    // Get push subscription
     const { data: pushData } = await supabase
       .from('push_subscriptions')
       .select('subscription')
@@ -607,7 +646,6 @@ async function scanAndNotifyUser(userId) {
 
     if (!pushData) return;
 
-    // Get gmail tokens
     const { data: tokenData } = await supabase
       .from('gmail_tokens')
       .select('tokens')
@@ -630,8 +668,26 @@ async function scanAndNotifyUser(userId) {
     const messages = messagesResponse.data.messages || [];
     if (!messages.length) return;
 
+    // Filter out already notified emails
+    const newMessages = [];
+    for (const msg of messages.slice(0, 5)) {
+      const key = userId + '_' + msg.id;
+      const { data: existing } = await supabase
+        .from('notified_emails')
+        .select('id')
+        .eq('id', key)
+        .single();
+      
+      if (!existing) {
+        newMessages.push(msg);
+        await supabase.from('notified_emails').insert({ id: key, user_id: userId });
+      }
+    }
+
+    if (!newMessages.length) return;
+
     const fullMessages = await Promise.all(
-      messages.slice(0, 5).map(msg =>
+      newMessages.map(msg =>
         gmail.users.messages.get({ userId: 'me', id: msg.id, format: 'full' })
       )
     );
@@ -641,7 +697,6 @@ async function scanAndNotifyUser(userId) {
 
     if (!unique.length) return;
 
-    // Send push for each detection
     for (const detection of unique) {
       await webpush.sendNotification(
         JSON.parse(pushData.subscription),
