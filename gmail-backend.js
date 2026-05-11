@@ -630,12 +630,6 @@ app.post('/api/gmail/webhook', async (req, res) => {
   }
 });
 
-create table notified_emails (
-  id text primary key,
-  user_id text,
-  created_at timestamp default now()
-);
-
 async function scanAndNotifyUser(userId) {
   try {
     const { data: pushData } = await supabase
