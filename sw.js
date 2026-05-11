@@ -6,12 +6,20 @@ self.addEventListener('push', function(e) {
       icon: 'https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png',
       badge: 'https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png',
       vibrate: [200, 100, 200],
-      requireInteraction: true
+      requireInteraction: true,
+      data: data.data || {} // ✅ Store payload data for click handler
     })
   );
 });
 
 self.addEventListener('notificationclick', function(e) {
   e.notification.close();
-  e.waitUntil(clients.openWindow('https://subtrack.surge.sh'));
+  const d = e.notification.data || {};
+  const params = new URLSearchParams();
+  if (d.service) params.set('service', d.service);
+  if (d.amount) params.set('amount', d.amount);
+  if (d.date) params.set('date', d.date);
+  
+  const url = params.toString() ? `https://subtrack.surge.sh/?${params.toString()}` : 'https://subtrack.surge.sh';
+  e.waitUntil(clients.openWindow(url));
 });

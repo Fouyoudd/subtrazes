@@ -1,20 +1,17 @@
 /**
- * SubTrack Gmail Scanner Backend
- * Node.js/Express backend for Gmail OAuth + subscription receipt detection.
- */
+SubTrack Gmail Scanner Backend
+Node.js/Express backend for Gmail OAuth + subscription receipt detection.
+*/
 const webpush = require('web-push');
-
 webpush.setVapidDetails(
   process.env.VAPID_EMAIL,
   process.env.VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );
-
 const cors = require("cors");
 const express = require("express");
 const { google } = require("googleapis");
 require("dotenv").config();
-
 const app = express();
 
 app.use(cors({
@@ -28,171 +25,48 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true
 }));
-
 app.use(express.json());
 
-// Config
+// ─── CONFIG ──────────────────────────────────────────────
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI || "http://localhost:3001/auth/google/callback";
 
+// ✅ Initialize OAuth2Client BEFORE any Google API calls
 const oauth2Client = new google.auth.OAuth2(
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
   REDIRECT_URI
 );
 
-// In-memory token store. This resets every backend restart.
 const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-// Subscription service rules
+// ─── SUBSCRIPTION RULES (Cleaned trailing spaces) ──────────
 const SUB_SERVICES = [
-  {
-    id: "spotify",
-    name: "Spotify",
-    cat: "Music",
-    froms: ["noreply@spotify.com", "spotify@"],
-    subjects: ["spotify", "spotify premium", "spotify receipt"]
-  },
-  {
-    id: "netflix",
-    name: "Netflix",
-    cat: "Video",
-    froms: ["netflix@"],
-    subjects: ["netflix", "netflix receipt", "netflix payment"]
-  },
-  {
-    id: "canva",
-    name: "Canva",
-    cat: "Design",
-    froms: ["noreply@canva.com", "billing@canva.com", "canva@"],
-    subjects: ["canva", "canva pro", "canva receipt", "canva payment"]
-  },
-  {
-    id: "capcut",
-    name: "CapCut Pro",
-    cat: "Video Editing",
-    froms: ["noreply@capcut.com", "billing@capcut.com", "capcut@"],
-    subjects: ["capcut", "capcut pro", "capcut receipt", "capcut payment"]
-  },
-  {
-    id: "youtube",
-    name: "YouTube Premium",
-    cat: "Video",
-    froms: ["noreply@google.com", "billing@google.com"],
-    subjects: ["youtube", "youtube premium"]
-  },
-  {
-    id: "adobe",
-    name: "Adobe",
-    cat: "Creative",
-    froms: ["noreply@adobe.com", "billing@adobe.com"],
-    subjects: ["adobe", "adobe payment", "adobe subscription"]
-  },
-  {
-    id: "notion",
-    name: "Notion",
-    cat: "Productivity",
-    froms: ["billing@notion.so", "noreply@notion.so"],
-    subjects: ["notion", "notion receipt", "notion payment"]
-  },
-  {
-    id: "duolingo",
-    name: "Duolingo Plus",
-    cat: "Education",
-    froms: ["duolingo@"],
-    subjects: ["duolingo", "duolingo payment"]
-  },
-  {
-    id: "disney",
-    name: "Disney+",
-    cat: "Video",
-    froms: ["help@disneyplus.com", "noreply@disneyplus.com"],
-    subjects: ["disney", "disney+"]
-  },
-  {
-    id: "hulu",
-    name: "Hulu",
-    cat: "Video",
-    froms: ["hulu@"],
-    subjects: ["hulu", "hulu payment", "hulu receipt"]
-  },
-  {
-    id: "icloud",
-    name: "iCloud+",
-    cat: "Storage",
-    froms: ["noreply@apple.com", "billing@apple.com"],
-    subjects: ["icloud", "icloud+", "apple"]
-  },
-  {
-    id: "google",
-    name: "Google One",
-    cat: "Storage",
-    froms: ["noreply@google.com", "google-one@"],
-    subjects: ["google one", "google storage"]
-  },
-  {
-    id: "microsoft",
-    name: "Microsoft 365",
-    cat: "Productivity",
-    froms: ["microsoft@", "billing@microsoft.com"],
-    subjects: ["microsoft 365", "office 365", "microsoft"]
-  },
-  {
-    id: "amazon",
-    name: "Amazon Prime",
-    cat: "Shopping",
-    froms: ["amazon@", "prime@"],
-    subjects: ["amazon prime", "amazon payment"]
-  },
-  {
-    id: "figma",
-    name: "Figma",
-    cat: "Design",
-    froms: ["billing@figma.com", "noreply@figma.com"],
-    subjects: ["figma", "figma payment"]
-  },
-  {
-    id: "chatgpt",
-    name: "ChatGPT Plus",
-    cat: "AI Tools",
-    froms: ["billing@openai.com", "noreply@openai.com"],
-    subjects: ["chatgpt", "openai", "chatgpt plus"]
-  },
-  {
-    id: "github",
-    name: "GitHub Pro",
-    cat: "Dev Tools",
-    froms: ["noreply@github.com", "support@github.com"],
-    subjects: ["github", "github pro"]
-  },
-  {
-    id: "dropbox",
-    name: "Dropbox Plus",
-    cat: "Storage",
-    froms: ["dropbox@", "billing@dropbox.com"],
-    subjects: ["dropbox", "dropbox payment"]
-  },
-  {
-    id: "slack",
-    name: "Slack Pro",
-    cat: "Communication",
-    froms: ["billing@slack.com", "noreply@slack.com"],
-    subjects: ["slack", "slack payment"]
-  },
-  {
-    id: "zoom",
-    name: "Zoom Pro",
-    cat: "Communication",
-    froms: ["noreply@zoom.us", "billing@zoom.us"],
-    subjects: ["zoom", "zoom payment"]
-  }
+  { id: "spotify", name: "Spotify", cat: "Music", froms: ["noreply@spotify.com", "spotify@"], subjects: ["spotify", "spotify premium", "spotify receipt"] },
+  { id: "netflix", name: "Netflix", cat: "Video", froms: ["netflix@"], subjects: ["netflix", "netflix receipt", "netflix payment"] },
+  { id: "canva", name: "Canva", cat: "Design", froms: ["noreply@canva.com", "billing@canva.com", "canva@"], subjects: ["canva", "canva pro", "canva receipt", "canva payment"] },
+  { id: "capcut", name: "CapCut Pro", cat: "Video Editing", froms: ["noreply@capcut.com", "billing@capcut.com", "capcut@"], subjects: ["capcut", "capcut pro", "capcut receipt", "capcut payment"] },
+  { id: "youtube", name: "YouTube Premium", cat: "Video", froms: ["noreply@google.com", "billing@google.com"], subjects: ["youtube", "youtube premium"] },
+  { id: "adobe", name: "Adobe", cat: "Creative", froms: ["noreply@adobe.com", "billing@adobe.com"], subjects: ["adobe", "adobe payment", "adobe subscription"] },
+  { id: "notion", name: "Notion", cat: "Productivity", froms: ["billing@notion.so", "noreply@notion.so"], subjects: ["notion", "notion receipt", "notion payment"] },
+  { id: "duolingo", name: "Duolingo Plus", cat: "Education", froms: ["duolingo@"], subjects: ["duolingo", "duolingo payment"] },
+  { id: "disney", name: "Disney+", cat: "Video", froms: ["help@disneyplus.com", "noreply@disneyplus.com"], subjects: ["disney", "disney+"] },
+  { id: "hulu", name: "Hulu", cat: "Video", froms: ["hulu@"], subjects: ["hulu", "hulu payment", "hulu receipt"] },
+  { id: "icloud", name: "iCloud+", cat: "Storage", froms: ["noreply@apple.com", "billing@apple.com"], subjects: ["icloud", "icloud+", "apple"] },
+  { id: "google", name: "Google One", cat: "Storage", froms: ["noreply@google.com", "google-one@"], subjects: ["google one", "google storage"] },
+  { id: "microsoft", name: "Microsoft 365", cat: "Productivity", froms: ["microsoft@", "billing@microsoft.com"], subjects: ["microsoft 365", "office 365", "microsoft"] },
+  { id: "amazon", name: "Amazon Prime", cat: "Shopping", froms: ["amazon@", "prime@"], subjects: ["amazon prime", "amazon payment"] },
+  { id: "figma", name: "Figma", cat: "Design", froms: ["billing@figma.com", "noreply@figma.com"], subjects: ["figma", "figma payment"] },
+  { id: "chatgpt", name: "ChatGPT Plus", cat: "AI Tools", froms: ["billing@openai.com", "noreply@openai.com"], subjects: ["chatgpt", "openai", "chatgpt plus"] },
+  { id: "github", name: "GitHub Pro", cat: "Dev Tools", froms: ["noreply@github.com", "support@github.com"], subjects: ["github", "github pro"] },
+  { id: "dropbox", name: "Dropbox Plus", cat: "Storage", froms: ["dropbox@", "billing@dropbox.com"], subjects: ["dropbox", "dropbox payment"] },
+  { id: "slack", name: "Slack Pro", cat: "Communication", froms: ["billing@slack.com", "noreply@slack.com"], subjects: ["slack", "slack payment"] },
+  { id: "zoom", name: "Zoom Pro", cat: "Communication", froms: ["noreply@zoom.us", "billing@zoom.us"], subjects: ["zoom", "zoom payment"] }
 ];
 
-// Your test sender. Do not add this inside each service froms.
 const TEST_SENDERS = ["bot2narido@gmail.com"];
-
 const SERVICE_KEYWORDS = [
   { id: "spotify", words: ["spotify", "spotify premium"] },
   { id: "canva", words: ["canva", "canva pro"] },
@@ -216,88 +90,133 @@ const SERVICE_KEYWORDS = [
   { id: "duolingo", words: ["duolingo", "duolingo plus"] }
 ];
 
+// ─── DETECTION HELPERS ───────────────────────────────────
 function findServiceFromEmail(from, subject, body) {
   const cleanFrom = String(from || "").toLowerCase();
   const text = `${subject || ""} ${body || ""}`.toLowerCase();
+  const isTestSender = TEST_SENDERS.some(sender => cleanFrom.includes(sender.toLowerCase()));
 
-  const isTestSender = TEST_SENDERS.some(sender =>
-    cleanFrom.includes(sender.toLowerCase())
-  );
-
-  // For fake test emails from bot2narido, detect by subject/body.
   if (isTestSender) {
-    const keywordMatch = SERVICE_KEYWORDS.find(service =>
-      service.words.some(word => text.includes(word))
-    );
-
-    if (!keywordMatch) return null;
-
-    return SUB_SERVICES.find(service => service.id === keywordMatch.id) || null;
+    const keywordMatch = SERVICE_KEYWORDS.find(service => service.words.some(word => text.includes(word)));
+    return keywordMatch ? SUB_SERVICES.find(s => s.id === keywordMatch.id) || null : null;
   }
 
-  // For real emails, detect by sender first.
-  let service = SUB_SERVICES.find(service =>
-    service.froms.some(fromRule => {
-      const needle = String(fromRule || "").toLowerCase().trim();
-      if (!needle) return false;
-
-      return cleanFrom.includes(needle) || cleanFrom.includes(needle.replace("@", ""));
-    })
-  );
-
+  let service = SUB_SERVICES.find(s => s.froms.some(r => cleanFrom.includes(String(r || "").toLowerCase().trim())));
   if (service) return service;
-
-  // Backup: detect by subject/body keywords.
-  service = SUB_SERVICES.find(service =>
-    (service.subjects || []).some(keyword => {
-      const needle = String(keyword || "").toLowerCase().trim();
-      return needle && text.includes(needle);
-    })
-  );
-
-  return service || null;
+  return SUB_SERVICES.find(s => (s.subjects || []).some(k => text.includes(String(k || "").toLowerCase().trim()))) || null;
 }
 
-// 1. OAuth: redirect to Google
+function getBodyText(payload) {
+  let text = "";
+  function readPart(part) {
+    if (!part) return;
+    if (part.mimeType === "text/plain" && part.body && part.body.data) {
+      text += Buffer.from(part.body.data, "base64").toString("utf8");
+    }
+    if (part.mimeType === "text/html" && part.body && part.body.data && !text) {
+      text += Buffer.from(part.body.data, "base64").toString("utf8").replace(/<[^>]*>/g, " ");
+    }
+    if (Array.isArray(part.parts)) part.parts.forEach(readPart);
+  }
+  readPart(payload);
+  return text;
+}
+
+// ✅ Fixed regex for decimals & currencies
+function extractAmount(text) {
+  const clean = String(text || "");
+  const patterns = [
+    /(?:total|amount|charged|price|cost|payment|paid)[\s:]*[₱$€£]?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i,
+    /[₱$€£]\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i,
+    /(?:USD|EUR|GBP|PHP)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i
+  ];
+  for (const p of patterns) {
+    const m = clean.match(p);
+    if (m) return m[1].replace(/,/g, "");
+  }
+  return null;
+}
+
+function extractBillingDate(text) {
+  const clean = String(text || "");
+  const m = clean.match(/(?:next billing date|next billing|renewal date|renews on|due date|charged on)[\s:]*([A-Za-z]+\s+\d{1,2},\s+\d{4})/i);
+  return m ? m[1].trim() : null;
+}
+
+function extractCycle(text) {
+  if (/annual|yearly|per year/i.test(text)) return "annual";
+  return "monthly";
+}
+
+function decodeIdToken(token) {
+  const parts = token.split(".");
+  if (parts.length !== 3) return "user";
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1], "base64").toString());
+    return payload.sub || "user";
+  } catch { return "user"; }
+}
+
+function buildGmailQuery() {
+  const fromQuery = [...SUB_SERVICES.flatMap(s => s.froms).filter(Boolean).map(f => `from:${f}`), ...TEST_SENDERS.map(f => `from:${f}`)].join(" OR ");
+  const kwQuery = ["receipt", "payment", "subscription", "renewal", "invoice", "charged", "premium", "pro"].join(" OR ");
+  return `(${fromQuery}) (${kwQuery}) newer_than:30d`;
+}
+
+function parseEmailsForSubscriptions(messages) {
+  return messages.map(msg => {
+    const headers = (msg.payload.headers || []).reduce((a, h) => ({ ...a, [h.name.toLowerCase()]: h.value }), {});
+    const body = getBodyText(msg.payload);
+    const service = findServiceFromEmail(headers.from, headers.subject, body);
+    if (!service) return null;
+    return {
+      service: service.id,
+      serviceName: service.name,
+      category: service.cat,
+      amount: extractAmount(body),
+      billingDate: extractBillingDate(body),
+      cycle: extractCycle(body),
+      emailDate: new Date(headers.date || Date.now()),
+      from: headers.from,
+      subject: headers.subject
+    };
+  }).filter(Boolean);
+}
+
+function deduplicateByService(detections) {
+  const map = new Map();
+  [...detections].sort((a, b) => new Date(b.emailDate) - new Date(a.emailDate)).forEach(d => {
+    if (!map.has(d.service)) map.set(d.service, d);
+  });
+  return Array.from(map.values());
+}
+
+// ─── ROUTES ──────────────────────────────────────────────
 app.get("/auth/google", (req, res) => {
-  const authUrl = oauth2Client.generateAuthUrl({
+  res.redirect(oauth2Client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
-    scope: [
-      "openid",
-      "email",
-      "profile",
-      "https://www.googleapis.com/auth/gmail.readonly"
-    ]
-  });
-
-  res.redirect(authUrl);
+    scope: ["openid", "email", "profile", "https://www.googleapis.com/auth/gmail.readonly"]
+  }));
 });
 
-// 2. OAuth: callback
 app.get("/auth/google/callback", async (req, res) => {
   const { code } = req.query;
-
-  if (!code) {
-    return res.status(400).send("Missing authorization code");
-  }
-
+  if (!code) return res.status(400).send("Missing authorization code");
   try {
     const { tokens } = await oauth2Client.getToken(code);
-
     const userId = tokens.id_token ? decodeIdToken(tokens.id_token) : "user";
 
-    const { error: upsertError } = await supabase
-  .schema('public')
-  .from('gmail_tokens')
-  .upsert({ user_id: userId, tokens, updated_at: new Date() });
-if (upsertError) {
-  console.error("Supabase save error:", upsertError);
-} else {
-  console.log("Token saved to Supabase for user:", userId);
-}
+    await supabase.from('gmail_tokens').upsert({ user_id: userId, tokens, updated_at: new Date() });
 
-    
+    // ✅ Subscribe to Gmail Pub/Sub for instant notifications
+    oauth2Client.setCredentials(tokens);
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    await gmail.users.watch({
+      userId: 'me',
+      requestBody: { topicName: 'projects/subcheck-detector/topics/gmail-notifications', labelIds: ['INBOX'] }
+    }).catch(err => console.warn("Pub/Sub watch failed (ensure GCP topic exists):", err.message));
+
     res.redirect(`https://subtrack.surge.sh/index.html?gmail=connected&user=${userId}#/app/notifications`);
   } catch (error) {
     console.error("OAuth callback error:", error);
@@ -305,402 +224,110 @@ if (upsertError) {
   }
 });
 
-// 3. Scan Gmail
 app.get("/api/scan-gmail/:userId", async (req, res) => {
   const { userId } = req.params;
-
   const { data } = await supabase.from('gmail_tokens').select('tokens').eq('user_id', userId).single();
-
-if (!data) {
-  return res.status(401).json({
-    error: "Gmail not connected. Please authorize first."
-  });
-}
-
-const tokens = data.tokens;
+  if (!data) return res.status(401).json({ error: "Gmail not connected. Please authorize first." });
 
   try {
-    oauth2Client.setCredentials(tokens);
-
-    const gmail = google.gmail({
-      version: "v1",
-      auth: oauth2Client
-    });
-
-    const query = buildGmailQuery();
-
-    const messagesResponse = await gmail.users.messages.list({
-      userId: "me",
-      q: query,
-      maxResults: 100
-    });
-
+    oauth2Client.setCredentials(data.tokens);
+    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+    const messagesResponse = await gmail.users.messages.list({ userId: "me", q: buildGmailQuery(), maxResults: 100 });
     const messages = messagesResponse.data.messages || [];
+    if (!messages.length) return res.json({ detections: [], message: "No subscription emails found" });
 
-    if (messages.length === 0) {
-      return res.json({
-        detections: [],
-        message: "No subscription emails found"
-      });
-    }
-
-    const fullMessages = await Promise.all(
-      messages.slice(0, 50).map(msg =>
-        gmail.users.messages.get({
-          userId: "me",
-          id: msg.id,
-          format: "full"
-        })
-      )
-    );
-
-    const gmailMessages = fullMessages.map(response => response.data);
-
-    const detections = parseEmailsForSubscriptions(gmailMessages);
-
-    const uniqueDetections = deduplicateByService(detections);
-
-    return res.json({
-      detections: uniqueDetections
-    });
+    const fullMessages = await Promise.all(messages.slice(0, 50).map(m => gmail.users.messages.get({ userId: "me", id: m.id, format: "full" })));
+    const detections = parseEmailsForSubscriptions(fullMessages.map(r => r.data));
+    return res.json({ detections: deduplicateByService(detections) });
   } catch (error) {
-    console.error("Real Gmail scan error:", error);
-    return res.status(500).json({
-      error: error.message
-    });
+    console.error("Scan error:", error);
+    return res.status(500).json({ error: error.message });
   }
 });
 
-function buildGmailQuery() {
-  const realSenderRules = SUB_SERVICES
-    .flatMap(service => service.froms)
-    .filter(Boolean)
-    .map(from => `from:${from}`);
-
-  const testSenderRules = TEST_SENDERS
-    .filter(Boolean)
-    .map(from => `from:${from}`);
-
-  const fromQuery = [...realSenderRules, ...testSenderRules].join(" OR ");
-
-  const keywordQuery = [
-    "receipt",
-    "payment",
-    "subscription",
-    "renewal",
-    "invoice",
-    "charged",
-    "premium",
-    "pro"
-  ].join(" OR ");
-
-  return `(${fromQuery}) (${keywordQuery}) newer_than:30d`;
-}
-
-function parseEmailsForSubscriptions(messages) {
-  return messages
-    .map(msg => {
-      const headers = (msg.payload.headers || []).reduce((acc, h) => {
-        acc[h.name.toLowerCase()] = h.value;
-        return acc;
-      }, {});
-
-      const body = getBodyText(msg.payload);
-      const from = String(headers.from || "").toLowerCase();
-      const subject = String(headers.subject || "").toLowerCase();
-      const date = new Date(headers.date || Date.now());
-
-      const service = findServiceFromEmail(from, subject, body);
-
-      if (!service) return null;
-
-      const amount = extractAmount(body);
-      const billingDate = extractBillingDate(body);
-      const cycle = extractCycle(body);
-
-      return {
-        service: service.id,
-        serviceName: service.name,
-        category: service.cat,
-        amount,
-        billingDate,
-        cycle,
-        emailDate: date,
-        from,
-        subject
-      };
-    })
-    .filter(Boolean);
-}
-
-function deduplicateByService(detections) {
-  const map = new Map();
-
-  const sorted = [...detections].sort((a, b) => {
-    return new Date(b.emailDate).getTime() - new Date(a.emailDate).getTime();
-  });
-
-  sorted.forEach(detection => {
-    if (!map.has(detection.service)) {
-      map.set(detection.service, detection);
-    }
-  });
-
-  return Array.from(map.values());
-}
-
-function getBodyText(payload) {
-  let text = "";
-
-  function readPart(part) {
-    if (!part) return;
-
-    if (part.mimeType === "text/plain" && part.body && part.body.data) {
-      text += Buffer.from(part.body.data, "base64").toString("utf8");
-    }
-
-    if (part.mimeType === "text/html" && part.body && part.body.data && !text) {
-      text += Buffer.from(part.body.data, "base64")
-        .toString("utf8")
-        .replace(/<[^>]*>/g, " ");
-    }
-
-    if (Array.isArray(part.parts)) {
-      part.parts.forEach(readPart);
-    }
-  }
-
-  readPart(payload);
-
-  return text;
-}
-
-function extractAmount(text) {
-  const cleanText = String(text || "");
-
-  const patterns = [
-    /(?:total|amount|charged|price|cost|payment|paid)[\s:]*\$?\s*([0-9]+(?:\.[0-9]{2})?)/i,
-    /\$\s*([0-9]+(?:\.[0-9]{2})?)/i,
-    /₱\s*([0-9,]+(?:\.[0-9]{2})?)/i
-  ];
-
-  for (const pattern of patterns) {
-    const match = cleanText.match(pattern);
-    if (match) return match[1].replace(/,/g, "");
-  }
-
-  return null;
-}
-
-function extractBillingDate(text) {
-  const cleanText = String(text || "");
-
-  const patterns = [
-    /(?:next billing date|next billing|renewal date|renews on|due date|charged on)[\s:]*([A-Za-z]+\s+\d{1,2},\s+\d{4})/i,
-    /([A-Za-z]+\s+\d{1,2},\s+\d{4})/
-  ];
-
-  for (const pattern of patterns) {
-    const match = cleanText.match(pattern);
-    if (match) return match[1].trim();
-  }
-
-  return null;
-}
-
-function extractCycle(text) {
-  const cleanText = String(text || "");
-
-  if (/annual|yearly|per year|\/year/i.test(cleanText)) return "annual";
-  if (/monthly|per month|\/month/i.test(cleanText)) return "monthly";
-
-  return "monthly";
-}
-
-function decodeIdToken(token) {
-  const parts = token.split(".");
-  if (parts.length !== 3) return "user";
-
-  const payload = JSON.parse(Buffer.from(parts[1], "base64").toString());
-  return payload.sub || "user";
-}
-
-const PORT = process.env.PORT || 3001;
-
-// Save push subscription
 app.post('/api/push/subscribe', async (req, res) => {
   const { subscription, userId } = req.body;
   if (!subscription || !userId) return res.status(400).json({ error: 'Missing data' });
-
-  const { error } = await supabase
-    .from('push_subscriptions')
-    .upsert({ user_id: userId, subscription: JSON.stringify(subscription), updated_at: new Date() });
-
+  const { error } = await supabase.from('push_subscriptions').upsert({ user_id: userId, subscription: JSON.stringify(subscription), updated_at: new Date() });
   if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
 });
 
-// Send test push
 app.post('/api/push/send-test', async (req, res) => {
   const { userId } = req.body;
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
-
-  const { data } = await supabase
-    .from('push_subscriptions')
-    .select('subscription')
-    .eq('user_id', userId)
-    .single();
-
+  const { data } = await supabase.from('push_subscriptions').select('subscription').eq('user_id', userId).single();
   if (!data) return res.status(404).json({ error: 'No subscription found' });
-
   try {
-    await webpush.sendNotification(
-      JSON.parse(data.subscription),
-      JSON.stringify({
-        title: 'SubTracks 🔔',
-        body: 'Push notifications are working!'
-      })
-    );
+    await webpush.sendNotification(JSON.parse(data.subscription), JSON.stringify({ title: 'SubTracks 🔔', body: 'Push notifications working!' }));
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.listen(PORT, () => {
-  console.log(`Gmail backend running on http://localhost:${PORT}`);
-  console.log(`OAuth callback: ${REDIRECT_URI}`);
-  console.log(`Google Client ID loaded: ${!!GOOGLE_CLIENT_ID}`);
-  console.log(`Google Client Secret loaded: ${!!GOOGLE_CLIENT_SECRET}`);
+// ─── WEBHOOK & SCHEDULER ─────────────────────────────────
+app.post('/api/gmail/webhook', async (req, res) => {
+  res.sendStatus(200);
+  try {
+    const { data: users } = await supabase.from('gmail_tokens').select('user_id');
+    if (!users?.length) return;
+    for (const u of users) await scanAndNotifyUser(u.user_id);
+  } catch (err) { console.error('Webhook error:', err); }
 });
 
 const schedule = require('node-schedule');
-
-// Replace your existing scheduler with this
 schedule.scheduleJob('*/5 * * * *', async function() {
-  console.log('Running scheduled Gmail scan...');
-  
   try {
-    const { data: users } = await supabase
-      .from('gmail_tokens')
-      .select('user_id');
-
-    if (!users || !users.length) return;
-
-    for (const user of users) {
-      await scanAndNotifyUser(user.user_id);
-    }
-  } catch (err) {
-    console.error('Scheduled scan error:', err);
-  }
+    const { data: users } = await supabase.from('gmail_tokens').select('user_id');
+    if (!users?.length) return;
+    for (const u of users) await scanAndNotifyUser(u.user_id);
+  } catch (err) { console.error('Scheduled scan error:', err); }
 });
 
-// Gmail Pub/Sub webhook
-app.post('/api/gmail/webhook', async (req, res) => {
-  res.sendStatus(200); // Always respond 200 first
-
-  try {
-    const message = req.body?.message;
-    if (!message) return;
-
-    const data = JSON.parse(Buffer.from(message.data, 'base64').toString());
-    const email = data.emailAddress;
-
-    if (!email) return;
-
-    // Find user by email
-    const { data: tokenData } = await supabase
-      .from('gmail_tokens')
-      .select('user_id')
-      .eq('user_id', data.historyId || email)
-      .single();
-
-    // Scan all users when webhook fires
-    const { data: users } = await supabase
-      .from('gmail_tokens')
-      .select('user_id');
-
-    if (!users || !users.length) return;
-
-    for (const user of users) {
-      await scanAndNotifyUser(user.user_id);
-    }
-  } catch (err) {
-    console.error('Webhook error:', err);
-  }
-});
-
+// ─── SCAN & NOTIFY ───────────────────────────────────────
 async function scanAndNotifyUser(userId) {
   try {
-    const { data: pushData } = await supabase
-      .from('push_subscriptions')
-      .select('subscription')
-      .eq('user_id', userId)
-      .single();
-
+    const { data: pushData } = await supabase.from('push_subscriptions').select('subscription').eq('user_id', userId).single();
     if (!pushData) return;
-
-    const { data: tokenData } = await supabase
-      .from('gmail_tokens')
-      .select('tokens')
-      .eq('user_id', userId)
-      .single();
-
+    const { data: tokenData } = await supabase.from('gmail_tokens').select('tokens').eq('user_id', userId).single();
     if (!tokenData) return;
 
     oauth2Client.setCredentials(tokenData.tokens);
-
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-    const query = buildGmailQuery();
-
-    const messagesResponse = await gmail.users.messages.list({
-      userId: 'me',
-      q: query,
-      maxResults: 10
-    });
-
+    const messagesResponse = await gmail.users.messages.list({ userId: 'me', q: buildGmailQuery(), maxResults: 10 });
     const messages = messagesResponse.data.messages || [];
     if (!messages.length) return;
 
-    // Filter out already notified emails
-    const newMessages = [];
+    const newMsgs = [];
     for (const msg of messages.slice(0, 5)) {
-      const key = userId + '_' + msg.id;
-      const { data: existing } = await supabase
-        .from('notified_emails')
-        .select('id')
-        .eq('id', key)
-        .single();
-      
+      const key = `${userId}_${msg.id}`;
+      const { data: existing } = await supabase.from('notified_emails').select('id').eq('id', key).single();
       if (!existing) {
-        newMessages.push(msg);
+        newMsgs.push(msg);
         await supabase.from('notified_emails').insert({ id: key, user_id: userId });
       }
     }
+    if (!newMsgs.length) return;
 
-    if (!newMessages.length) return;
+    const fullMessages = await Promise.all(newMsgs.map(m => gmail.users.messages.get({ userId: 'me', id: m.id, format: 'full' })));
+    const detections = deduplicateByService(parseEmailsForSubscriptions(fullMessages.map(r => r.data)));
+    if (!detections.length) return;
 
-    const fullMessages = await Promise.all(
-      newMessages.map(msg =>
-        gmail.users.messages.get({ userId: 'me', id: msg.id, format: 'full' })
-      )
-    );
-
-    const detections = parseEmailsForSubscriptions(fullMessages.map(r => r.data));
-    const unique = deduplicateByService(detections);
-
-    if (!unique.length) return;
-
-    for (const detection of unique) {
-      await webpush.sendNotification(
-        JSON.parse(pushData.subscription),
-        JSON.stringify({
-          title: `SubTracks — ${detection.serviceName} detected 📬`,
-          body: `Receipt found. Tap to add it to SubTracks.`
-        })
-      );
+    for (const d of detections) {
+      // ✅ Push payload with auto-fill data
+      await webpush.sendNotification(JSON.parse(pushData.subscription), JSON.stringify({
+        title: `SubTracks — ${d.serviceName} detected 📬`,
+        body: `Amount: ${d.amount || 'N/A'} • Tap to add`,
+        data: { service: d.serviceName, amount: d.amount, date: d.billingDate }
+      }));
     }
-  } catch (err) {
-    console.error('Scan notify error for', userId, err.message);
-  }
+  } catch (err) { console.error('Notify error for', userId, err.message); }
 }
+
+// ─── START SERVER ────────────────────────────────────────
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`✅ Gmail backend running on http://localhost:${PORT}`);
+  console.log(`🔗 OAuth callback: ${REDIRECT_URI}`);
+  console.log(`🔑 Google Client ID loaded: ${!!GOOGLE_CLIENT_ID}`);
+  console.log(`🔐 Google Client Secret loaded: ${!!GOOGLE_CLIENT_SECRET}`);
+});
