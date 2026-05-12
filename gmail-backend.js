@@ -648,12 +648,14 @@ app.post('/api/gmail/webhook', async (req, res) => {
 
 async function scanAndNotifyUser(userId) {
   try {
+    console.log('Scanning user:', userId);
     const { data: pushData } = await supabase
       .from('push_subscriptions')
       .select('subscription')
       .eq('user_id', userId)
       .single();
 
+    console.log('Push data found:', !!pushData);
     if (!pushData) return;
 
     const { data: tokenData } = await supabase
