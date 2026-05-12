@@ -4148,7 +4148,7 @@ async function signOut() {
       pop(error.message);
     }
   }
-}
+
 
   clearLocalAuthSession();
   resetLocalUserState();
@@ -4161,6 +4161,17 @@ async function switchAccount() {
   if (!supabaseClient) {
     pop("Supabase script is missing.");
     return;
+  }
+
+  // Clear Gmail token and push subscription on switch
+  const userId = localStorage.getItem('subtracks-user-id');
+  if (userId) {
+    fetch('https://subtracks-production.up.railway.app/api/logout-gmail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    });
+    localStorage.removeItem('subtracks-user-id');
   }
 
   const { error } = await supabaseClient.auth.signOut({ scope: "global" });
