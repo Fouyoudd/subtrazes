@@ -713,8 +713,8 @@ async function scanAndNotifyUser(userId) {
       const amountStr = detection.amount ? ` · $${detection.amount}` : '';
       const dateStr = detection.billingDate ? ` · ${detection.billingDate}` : '';
       await webpush.sendNotification(
-        JSON.parse(pushData.subscription),
-        JSON.stringify({
+  JSON.parse(pushData.subscription),
+  JSON.stringify({
           title: `${detection.serviceName} receipt detected 📬`,
           body: `Tap to add${amountStr}${dateStr} — auto-filled from Gmail.`,
           detection: {
@@ -725,7 +725,11 @@ async function scanAndNotifyUser(userId) {
             category: detection.category,
             source: 'gmail'
           }
-        })
+      }),
+        {
+          urgency: 'high',
+          TTL: 60
+        }
       );
     }
   } catch (err) {
