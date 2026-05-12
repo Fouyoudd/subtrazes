@@ -193,12 +193,51 @@ app.post('/api/push/send-test', async (req, res) => {
 });
 
 app.post('/api/gmail/webhook', async (req, res) => {
-  res.sendStatus(200);
+  res.sendStatus(200); // Always respond 200 first (Google requirement)
+  
   try {
-    const { data: users } = await supabase.from('gmail_tokens').select('user_id');
-    if (!users?.length) return;
-    for (const u of users) await scanAndNotifyUser(u.user_id);
-  } catch (e) { console.error('Webhook error:', e); }
+    console.log('📨 Webhook received:', JSON.stringify(req.body));
+    
+    const message = req.body?.message;
+    if (!message) {
+      console.log('No message in webhook body');
+      return;
+    }
+    
+    // Decode the base64 message data
+    let data;
+    try {
+      data = JSON.parse(Buffer.from(message.data, 'base64').toString());
+      console.log('📦 Decoded webhook data:', data);
+    } catch (parseErr) {
+      console.error('Failed to parse webhook data:', parseErr.message);
+      return;
+    }
+    
+    const emailAddress = data.emailAddress;
+    if (!emailAddress) {
+      console.log('No emailAddress in decoded data');
+      return;
+    }
+    
+    // Find user by email address
+    const { data: tokenData } = await supabase
+      .from('gmail_tokens')
+      .select('user_id')
+      .eq('email', emailAddress) // Or use historyId if that's how you store it
+      .single();
+    
+    if (!tokenData) {
+      console.log('No user found for email:', emailAddress);
+      return;
+    }
+    
+    // Only scan this specific user
+    await scanAndNotifyUser(tokenData.user_id);
+    
+  } catch (err) {
+    console.error('Webhook error:', err);
+  }
 });
 
 const schedule = require('node-schedule');
