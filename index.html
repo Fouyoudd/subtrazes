@@ -7386,33 +7386,52 @@ document.addEventListener('DOMContentLoaded', function() {
     const params = new URLSearchParams(window.location.search);
     if (!params.has('service') && !params.has('amount')) return;
 
-    const serviceInput = document.querySelector('input[placeholder*="Service"], input[name="service"], #service-input');
-    const amountInput  = document.querySelector('input[placeholder*="Amount"], input[name="amount"], input[type="number"], #amount-input');
-    const dateInput    = document.querySelector('input[placeholder*="Date"], input[name="date"], input[type="date"], #date-input');
+    // ✅ iOS Cold Start Fix: Wait for SPA/DOM to fully mount before filling
+    const waitForApp = (cb, retries = 12) => {
+      if (document.querySelector('#app, main, .dashboard-container, nav') || retries === 0) {
+        cb();
+      } else {
+        setTimeout(() => waitForApp(cb, retries - 1), 250);
+      }
+    };
 
-    if (params.get('service') && serviceInput) serviceInput.value = params.get('service');
-    if (params.get('amount') && amountInput) {
-      amountInput.value = params.get('amount');
-      amountInput.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    if (dateInput) {
-      let dateVal = params.get('date') || (() => {
-        const d = new Date(); d.setMonth(d.getMonth() + 1);
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      })();
-      try { const parsed = new Date(dateVal); if (!isNaN(parsed)) dateVal = parsed.toISOString().split('T')[0]; } catch(e) {}
-      dateInput.value = dateVal;
-      dateInput.dispatchEvent(new Event('input', { bubbles: true }));
-    }
+    waitForApp(() => {
+      const serviceInput = document.querySelector('input[placeholder*="Service"], input[name="service"], #service-input');
+      const amountInput  = document.querySelector('input[placeholder*="Amount"], input[name="amount"], input[type="number"], #amount-input');
+      const dateInput    = document.querySelector('input[placeholder*="Date"], input[name="date"], input[type="date"], #date-input');
 
-    const addBtn = document.querySelector('[aria-label*="Add"], button:contains("Add Subscription"), .add-sub-btn');
-    if (addBtn) addBtn.click();
+      if (params.get('service') && serviceInput) serviceInput.value = params.get('service');
+      if (params.get('amount') && amountInput) {
+        amountInput.value = params.get('amount');
+        amountInput.dispatchEvent(new Event('input', { bubbles: true }));
+        amountInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (dateInput) {
+        let dateVal = params.get('date') || (() => {
+          const d = new Date(); d.setMonth(d.getMonth() + 1);
+          return d.toISOString().split('T')[0];
+        })();
+        dateInput.value = dateVal;
+        dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+        dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
 
-    window.history.replaceState({}, document.title, window.location.pathname);
+      // Open add modal/view
+      const addBtn = document.querySelector('[aria-label*="Add"], button:contains("Add Subscription"), .add-sub-btn');
+      if (addBtn) addBtn.click();
+
+      // ✅ Clean URL AFTER app settles (prevents router/auth reset)
+      setTimeout(() => {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+      }, 1500);
+    });
   }
 
-  document.addEventListener('DOMContentLoaded', () => setTimeout(autoFillFromNotification, 500));
+  // Run on load, focus (iOS background->foreground), and route changes
+  document.addEventListener('DOMContentLoaded', () => setTimeout(autoFillFromNotification, 800));
   window.addEventListener('focus', autoFillFromNotification);
+  window.addEventListener('popstate', autoFillFromNotification);
 })();
 </script>
 
