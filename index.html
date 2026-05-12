@@ -7571,6 +7571,34 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 
+<script>
+(function() {
+  function autoFillFromNotification() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('service') && !params.has('amount')) return;
+
+    const serviceInput = document.querySelector('input[placeholder*="Service"], input[name="service"], #service-input');
+    const amountInput  = document.querySelector('input[placeholder*="Amount"], input[name="amount"], input[type="number"], #amount-input');
+    const dateInput    = document.querySelector('input[placeholder*="Date"], input[name="date"], input[type="date"], #date-input');
+
+    if (params.get('service') && serviceInput) serviceInput.value = params.get('service');
+    if (params.get('amount') && amountInput) {
+      amountInput.value = params.get('amount');
+      amountInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    if (params.get('date') && dateInput) {
+      dateInput.value = params.get('date');
+      dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    // Clean URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => setTimeout(autoFillFromNotification, 800));
+})();
+</script>
+
 </body>
 
 </html>

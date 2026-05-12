@@ -7,7 +7,8 @@ self.addEventListener('push', function(e) {
       badge: 'https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png',
       vibrate: [200, 100, 200],
       requireInteraction: true,
-      data: data.data || {} // ✅ Store payload for click handler
+      // ✅ Store the payload data for the click handler
+      data: data.data || {}
     })
   );
 });
@@ -17,6 +18,7 @@ self.addEventListener('notificationclick', function(e) {
   const d = e.notification.data || {};
   const params = new URLSearchParams();
   
+  // ✅ Add data to URL for auto-fill
   if (d.service) params.set('service', d.service);
   if (d.amount) params.set('amount', d.amount);
   if (d.date) params.set('date', d.date);
@@ -25,8 +27,8 @@ self.addEventListener('notificationclick', function(e) {
   params.set('_t', Date.now());
   
   const url = params.toString() 
-    ? `https://subtrack.surge.sh/index.html?${params.toString()}#/app/dashboard` 
-    : 'https://subtrack.surge.sh/index.html#/app/dashboard';
+    ? `https://subtrack.surge.sh/?${params.toString()}` 
+    : 'https://subtrack.surge.sh';
     
   e.waitUntil(clients.openWindow(url));
 });

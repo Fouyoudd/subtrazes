@@ -1,8 +1,13 @@
 /**
 SubTrack Gmail Scanner Backend
+Node.js/Express backend for Gmail OAuth + subscription receipt detection.
 */
 const webpush = require('web-push');
-webpush.setVapidDetails(process.env.VAPID_EMAIL, process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
+webpush.setVapidDetails(
+  process.env.VAPID_EMAIL,
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
 const cors = require("cors");
 const express = require("express");
 const { google } = require("googleapis");
@@ -10,22 +15,34 @@ require("dotenv").config();
 const app = express();
 
 app.use(cors({
-  origin: ["https://subtrack.surge.sh", "http://127.0.0.1:5500", "http://localhost:5500", "http://localhost:3000"],
+  origin: [
+    "https://subtrack.surge.sh",
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "http://localhost:3000",
+    "http://localhost:8081"
+  ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true
 }));
 app.use(express.json());
 
-// ✅ CONFIG: Initialize oauth2Client FIRST (fixes startup crash)
+// ─── CONFIG (Initialized FIRST to prevent crash) ──────────────────────────
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI || "http://localhost:3001/auth/google/callback";
-const oauth2Client = new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI);
+
+// ✅ Initialize oauth2Client immediately
+const oauth2Client = new google.auth.OAuth2(
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
+  REDIRECT_URI
+);
 
 const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-// ✅ Clean arrays (no trailing spaces)
+// ─── SUBSCRIPTION RULES (Cleaned spaces) ──────────────────────────────────
 const SUB_SERVICES = [
   { id: "spotify", name: "Spotify", cat: "Music", froms: ["noreply@spotify.com", "spotify@"], subjects: ["spotify", "spotify premium", "spotify receipt"] },
   { id: "netflix", name: "Netflix", cat: "Video", froms: ["netflix@"], subjects: ["netflix", "netflix receipt", "netflix payment"] },
@@ -63,14 +80,17 @@ const SERVICE_KEYWORDS = [
   { id: "amazon", words: ["amazon prime", "prime video"] }, { id: "duolingo", words: ["duolingo", "duolingo plus"] }
 ];
 
+// ─── DETECTION HELPERS ───────────────────────────────────
 function findServiceFromEmail(from, subject, body) {
   const cleanFrom = String(from || "").toLowerCase();
   const text = `${subject || ""} ${body || ""}`.toLowerCase();
   const isTestSender = TEST_SENDERS.some(sender => cleanFrom.includes(sender.toLowerCase()));
+
   if (isTestSender) {
-    const kw = SERVICE_KEYWORDS.find(s => s.words.some(w => text.includes(w)));
-    return kw ? SUB_SERVICES.find(s => s.id === kw.id) || null : null;
+    const keywordMatch = SERVICE_KEYWORDS.find(service => service.words.some(word => text.includes(word)));
+    return keywordMatch ? SUB_SERVICES.find(s => s.id === keywordMatch.id) || null : null;
   }
+
   let service = SUB_SERVICES.find(s => s.froms.some(r => cleanFrom.includes(String(r || "").toLowerCase().trim())));
   if (service) return service;
   return SUB_SERVICES.find(s => (s.subjects || []).some(k => text.includes(String(k || "").toLowerCase().trim()))) || null;
@@ -80,16 +100,20 @@ function getBodyText(payload) {
   let text = "";
   function readPart(part) {
     if (!part) return;
-    // ✅ Fixed & & -> &&
-    if (part.mimeType === "text/plain" && part.body && part.body.data) text += Buffer.from(part.body.data, "base64").toString("utf8");
-    if (part.mimeType === "text/html" && part.body && part.body.data && !text) text += Buffer.from(part.body.data, "base64").toString("utf8").replace(/<[^>]*>/g, " ");
+    // ✅ Fixed syntax: & & -> &&
+    if (part.mimeType === "text/plain" && part.body && part.body.data) {
+      text += Buffer.from(part.body.data, "base64").toString("utf8");
+    }
+    if (part.mimeType === "text/html" && part.body && part.body.data && !text) {
+      text += Buffer.from(part.body.data, "base64").toString("utf8").replace(/<[^>]*>/g, " ");
+    }
     if (Array.isArray(part.parts)) part.parts.forEach(readPart);
   }
   readPart(payload);
   return text;
 }
 
-// ✅ Fixed regex for decimals: \. instead of .
+// ✅ Fixed regex for decimals: 10.99 works now
 function extractAmount(text) {
   const clean = String(text || "");
   const patterns = [
@@ -133,7 +157,13 @@ function deduplicateByService(detections) {
   return Array.from(map.values());
 }
 
-app.get("/auth/google", (req, res) => res.redirect(oauth2Client.generateAuthUrl({ access_type: "offline", prompt: "consent", scope: ["openid", "email", "profile", "https://www.googleapis.com/auth/gmail.readonly"] })));
+// ─── ROUTES ──────────────────────────────────────────────
+app.get("/auth/google", (req, res) => {
+  res.redirect(oauth2Client.generateAuthUrl({
+    access_type: "offline", prompt: "consent",
+    scope: ["openid", "email", "profile", "https://www.googleapis.com/auth/gmail.readonly"]
+  }));
+});
 
 app.get("/auth/google/callback", async (req, res) => {
   const { code } = req.query;
@@ -184,71 +214,35 @@ app.post('/api/push/send-test', async (req, res) => {
   const { data } = await supabase.from('push_subscriptions').select('subscription').eq('user_id', userId).single();
   if (!data) return res.status(404).json({ error: 'No subscription' });
   try {
+    // ✅ Added data payload for auto-fill testing
     await webpush.sendNotification(JSON.parse(data.subscription), JSON.stringify({
       title: 'SubTracks 🔔', body: 'Test push',
-      data: { service: 'Test', amount: '9.99', date: 'Next Month' }
+       { service: 'Test', amount: '9.99', date: 'Next Month' }
     }));
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ─── WEBHOOK & SCHEDULER ─────────────────────────────────
 app.post('/api/gmail/webhook', async (req, res) => {
-  res.sendStatus(200); // Always respond 200 first (Google requirement)
-  
+  res.sendStatus(200);
   try {
-    console.log('📨 Webhook received:', JSON.stringify(req.body));
-    
-    const message = req.body?.message;
-    if (!message) {
-      console.log('No message in webhook body');
-      return;
-    }
-    
-    // Decode the base64 message data
-    let data;
-    try {
-      data = JSON.parse(Buffer.from(message.data, 'base64').toString());
-      console.log('📦 Decoded webhook data:', data);
-    } catch (parseErr) {
-      console.error('Failed to parse webhook data:', parseErr.message);
-      return;
-    }
-    
-    const emailAddress = data.emailAddress;
-    if (!emailAddress) {
-      console.log('No emailAddress in decoded data');
-      return;
-    }
-    
-    // Find user by email address
-    const { data: tokenData } = await supabase
-      .from('gmail_tokens')
-      .select('user_id')
-      .eq('email', emailAddress) // Or use historyId if that's how you store it
-      .single();
-    
-    if (!tokenData) {
-      console.log('No user found for email:', emailAddress);
-      return;
-    }
-    
-    // Only scan this specific user
-    await scanAndNotifyUser(tokenData.user_id);
-    
-  } catch (err) {
-    console.error('Webhook error:', err);
-  }
+    const {  users } = await supabase.from('gmail_tokens').select('user_id');
+    if (!users?.length) return;
+    for (const u of users) await scanAndNotifyUser(u.user_id);
+  } catch (err) { console.error('Webhook error:', err); }
 });
 
 const schedule = require('node-schedule');
 schedule.scheduleJob('*/5 * * * *', async function() {
   try {
-    const { data: users } = await supabase.from('gmail_tokens').select('user_id');
+    const {  users } = await supabase.from('gmail_tokens').select('user_id');
     if (!users?.length) return;
     for (const u of users) await scanAndNotifyUser(u.user_id);
-  } catch (e) { console.error('Scheduler error:', e); }
+  } catch (err) { console.error('Scheduler error:', err); }
 });
 
+// ─── SCAN & NOTIFY ───────────────────────────────────────
 async function scanAndNotifyUser(userId) {
   try {
     const { data: pushData } = await supabase.from('push_subscriptions').select('subscription').eq('user_id', userId).single();
@@ -265,7 +259,7 @@ async function scanAndNotifyUser(userId) {
     const newMsgs = [];
     for (const msg of messages.slice(0, 5)) {
       const key = `${userId}_${msg.id}`;
-      const { data: existing } = await supabase.from('notified_emails').select('id').eq('id', key).single();
+      const {  existing } = await supabase.from('notified_emails').select('id').eq('id', key).single();
       if (!existing) { newMsgs.push(msg); await supabase.from('notified_emails').insert({ id: key, user_id: userId }); }
     }
     if (!newMsgs.length) return;
@@ -286,4 +280,7 @@ async function scanAndNotifyUser(userId) {
 }
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`✅ Backend running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Backend running on port ${PORT}`);
+  console.log(`🔗 OAuth: ${REDIRECT_URI}`);
+});
