@@ -7,7 +7,7 @@ self.addEventListener('push', function(e) {
       badge: 'https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png',
       vibrate: [200, 100, 200],
       requireInteraction: true,
-      data: data.data || {} // ✅ Store payload data for click handler
+      data: data.data || {} // ✅ Store for click handler
     })
   );
 });

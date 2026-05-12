@@ -15,24 +15,17 @@ require("dotenv").config();
 const app = express();
 
 app.use(cors({
-  origin: [
-    "https://subtrack.surge.sh",
-    "http://127.0.0.1:5500",
-    "http://localhost:5500",
-    "http://localhost:3000",
-    "http://localhost:8081"
-  ],
+  origin: ["https://subtrack.surge.sh", "http://127.0.0.1:5500", "http://localhost:5500", "http://localhost:3000"],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true
 }));
 app.use(express.json());
 
-// ─── CONFIG ──────────────────────────────────────────────
+// ─── CONFIG (Moved UP so it's defined before use) ──────────────────────────
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI || "http://localhost:3001/auth/google/callback";
 
-// ✅ Initialize OAuth2Client BEFORE any Google API calls
 const oauth2Client = new google.auth.OAuth2(
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
@@ -42,7 +35,7 @@ const oauth2Client = new google.auth.OAuth2(
 const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-// ─── SUBSCRIPTION RULES (Cleaned trailing spaces) ──────────
+// ─── SUBSCRIPTION RULES ──────────────────────────────────
 const SUB_SERVICES = [
   { id: "spotify", name: "Spotify", cat: "Music", froms: ["noreply@spotify.com", "spotify@"], subjects: ["spotify", "spotify premium", "spotify receipt"] },
   { id: "netflix", name: "Netflix", cat: "Video", froms: ["netflix@"], subjects: ["netflix", "netflix receipt", "netflix payment"] },
@@ -68,26 +61,16 @@ const SUB_SERVICES = [
 
 const TEST_SENDERS = ["bot2narido@gmail.com"];
 const SERVICE_KEYWORDS = [
-  { id: "spotify", words: ["spotify", "spotify premium"] },
-  { id: "canva", words: ["canva", "canva pro"] },
-  { id: "capcut", words: ["capcut", "capcut pro"] },
-  { id: "netflix", words: ["netflix"] },
-  { id: "youtube", words: ["youtube premium", "youtube"] },
-  { id: "adobe", words: ["adobe"] },
-  { id: "chatgpt", words: ["chatgpt", "openai", "chatgpt plus"] },
-  { id: "figma", words: ["figma"] },
-  { id: "notion", words: ["notion"] },
-  { id: "zoom", words: ["zoom", "zoom pro"] },
-  { id: "github", words: ["github", "github pro"] },
-  { id: "dropbox", words: ["dropbox", "dropbox plus"] },
-  { id: "slack", words: ["slack", "slack pro"] },
-  { id: "disney", words: ["disney+", "disney plus", "disneyplus"] },
-  { id: "hulu", words: ["hulu"] },
-  { id: "icloud", words: ["icloud", "icloud+"] },
-  { id: "google", words: ["google one", "google storage"] },
-  { id: "microsoft", words: ["microsoft 365", "office 365", "microsoft"] },
-  { id: "amazon", words: ["amazon prime", "prime video"] },
-  { id: "duolingo", words: ["duolingo", "duolingo plus"] }
+  { id: "spotify", words: ["spotify", "spotify premium"] }, { id: "canva", words: ["canva", "canva pro"] },
+  { id: "capcut", words: ["capcut", "capcut pro"] }, { id: "netflix", words: ["netflix"] },
+  { id: "youtube", words: ["youtube premium", "youtube"] }, { id: "adobe", words: ["adobe"] },
+  { id: "chatgpt", words: ["chatgpt", "openai", "chatgpt plus"] }, { id: "figma", words: ["figma"] },
+  { id: "notion", words: ["notion"] }, { id: "zoom", words: ["zoom", "zoom pro"] },
+  { id: "github", words: ["github", "github pro"] }, { id: "dropbox", words: ["dropbox", "dropbox plus"] },
+  { id: "slack", words: ["slack", "slack pro"] }, { id: "disney", words: ["disney+", "disney plus", "disneyplus"] },
+  { id: "hulu", words: ["hulu"] }, { id: "icloud", words: ["icloud", "icloud+"] },
+  { id: "google", words: ["google one", "google storage"] }, { id: "microsoft", words: ["microsoft 365", "office 365", "microsoft"] },
+  { id: "amazon", words: ["amazon prime", "prime video"] }, { id: "duolingo", words: ["duolingo", "duolingo plus"] }
 ];
 
 // ─── DETECTION HELPERS ───────────────────────────────────
@@ -110,6 +93,7 @@ function getBodyText(payload) {
   let text = "";
   function readPart(part) {
     if (!part) return;
+    // ✅ Fixed & & -> &&
     if (part.mimeType === "text/plain" && part.body && part.body.data) {
       text += Buffer.from(part.body.data, "base64").toString("utf8");
     }
@@ -122,7 +106,7 @@ function getBodyText(payload) {
   return text;
 }
 
-// ✅ Fixed regex for decimals & currencies
+// ✅ Fixed regex for decimals
 function extractAmount(text) {
   const clean = String(text || "");
   const patterns = [
@@ -138,21 +122,17 @@ function extractAmount(text) {
 }
 
 function extractBillingDate(text) {
-  const clean = String(text || "");
-  const m = clean.match(/(?:next billing date|next billing|renewal date|renews on|due date|charged on)[\s:]*([A-Za-z]+\s+\d{1,2},\s+\d{4})/i);
+  const m = String(text || "").match(/(?:next billing date|next billing|renewal date|renews on|due date|charged on)[\s:]*([A-Za-z]+\s+\d{1,2},\s+\d{4})/i);
   return m ? m[1].trim() : null;
 }
 
 function extractCycle(text) {
-  if (/annual|yearly|per year/i.test(text)) return "annual";
-  return "monthly";
+  return /annual|yearly|per year/i.test(text) ? "annual" : "monthly";
 }
 
 function decodeIdToken(token) {
-  const parts = token.split(".");
-  if (parts.length !== 3) return "user";
   try {
-    const payload = JSON.parse(Buffer.from(parts[1], "base64").toString());
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
     return payload.sub || "user";
   } catch { return "user"; }
 }
@@ -169,33 +149,20 @@ function parseEmailsForSubscriptions(messages) {
     const body = getBodyText(msg.payload);
     const service = findServiceFromEmail(headers.from, headers.subject, body);
     if (!service) return null;
-    return {
-      service: service.id,
-      serviceName: service.name,
-      category: service.cat,
-      amount: extractAmount(body),
-      billingDate: extractBillingDate(body),
-      cycle: extractCycle(body),
-      emailDate: new Date(headers.date || Date.now()),
-      from: headers.from,
-      subject: headers.subject
-    };
+    return { service: service.id, serviceName: service.name, category: service.cat, amount: extractAmount(body), billingDate: extractBillingDate(body), cycle: extractCycle(body), emailDate: new Date(headers.date || Date.now()), from: headers.from, subject: headers.subject };
   }).filter(Boolean);
 }
 
 function deduplicateByService(detections) {
   const map = new Map();
-  [...detections].sort((a, b) => new Date(b.emailDate) - new Date(a.emailDate)).forEach(d => {
-    if (!map.has(d.service)) map.set(d.service, d);
-  });
+  [...detections].sort((a, b) => new Date(b.emailDate) - new Date(a.emailDate)).forEach(d => { if (!map.has(d.service)) map.set(d.service, d); });
   return Array.from(map.values());
 }
 
 // ─── ROUTES ──────────────────────────────────────────────
 app.get("/auth/google", (req, res) => {
   res.redirect(oauth2Client.generateAuthUrl({
-    access_type: "offline",
-    prompt: "consent",
+    access_type: "offline", prompt: "consent",
     scope: ["openid", "email", "profile", "https://www.googleapis.com/auth/gmail.readonly"]
   }));
 });
@@ -205,18 +172,8 @@ app.get("/auth/google/callback", async (req, res) => {
   if (!code) return res.status(400).send("Missing authorization code");
   try {
     const { tokens } = await oauth2Client.getToken(code);
-    const userId = tokens.id_token ? decodeIdToken(tokens.id_token) : "user";
-
+    const userId = decodeIdToken(tokens.id_token);
     await supabase.from('gmail_tokens').upsert({ user_id: userId, tokens, updated_at: new Date() });
-
-    // ✅ Subscribe to Gmail Pub/Sub for instant notifications
-    oauth2Client.setCredentials(tokens);
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-    await gmail.users.watch({
-      userId: 'me',
-      requestBody: { topicName: 'projects/subcheck-detector/topics/gmail-notifications', labelIds: ['INBOX'] }
-    }).catch(err => console.warn("Pub/Sub watch failed (ensure GCP topic exists):", err.message));
-
     res.redirect(`https://subtrack.surge.sh/index.html?gmail=connected&user=${userId}#/app/notifications`);
   } catch (error) {
     console.error("OAuth callback error:", error);
@@ -227,22 +184,16 @@ app.get("/auth/google/callback", async (req, res) => {
 app.get("/api/scan-gmail/:userId", async (req, res) => {
   const { userId } = req.params;
   const { data } = await supabase.from('gmail_tokens').select('tokens').eq('user_id', userId).single();
-  if (!data) return res.status(401).json({ error: "Gmail not connected. Please authorize first." });
-
+  if (!data) return res.status(401).json({ error: "Gmail not connected." });
   try {
     oauth2Client.setCredentials(data.tokens);
     const gmail = google.gmail({ version: "v1", auth: oauth2Client });
     const messagesResponse = await gmail.users.messages.list({ userId: "me", q: buildGmailQuery(), maxResults: 100 });
     const messages = messagesResponse.data.messages || [];
     if (!messages.length) return res.json({ detections: [], message: "No subscription emails found" });
-
     const fullMessages = await Promise.all(messages.slice(0, 50).map(m => gmail.users.messages.get({ userId: "me", id: m.id, format: "full" })));
-    const detections = parseEmailsForSubscriptions(fullMessages.map(r => r.data));
-    return res.json({ detections: deduplicateByService(detections) });
-  } catch (error) {
-    console.error("Scan error:", error);
-    return res.status(500).json({ error: error.message });
-  }
+    return res.json({ detections: deduplicateByService(parseEmailsForSubscriptions(fullMessages.map(r => r.data))) });
+  } catch (error) { return res.status(500).json({ error: error.message }); }
 });
 
 app.post('/api/push/subscribe', async (req, res) => {
@@ -259,7 +210,10 @@ app.post('/api/push/send-test', async (req, res) => {
   const { data } = await supabase.from('push_subscriptions').select('subscription').eq('user_id', userId).single();
   if (!data) return res.status(404).json({ error: 'No subscription found' });
   try {
-    await webpush.sendNotification(JSON.parse(data.subscription), JSON.stringify({ title: 'SubTracks 🔔', body: 'Push notifications working!' }));
+    await webpush.sendNotification(JSON.parse(data.subscription), JSON.stringify({
+      title: 'SubTracks 🔔', body: 'Push test successful!',
+      data: { service: 'Test', amount: '9.99', date: 'Next Month' } // ✅ Added for testing auto-fill
+    }));
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -268,7 +222,7 @@ app.post('/api/push/send-test', async (req, res) => {
 app.post('/api/gmail/webhook', async (req, res) => {
   res.sendStatus(200);
   try {
-    const { data: users } = await supabase.from('gmail_tokens').select('user_id');
+    const {  users } = await supabase.from('gmail_tokens').select('user_id');
     if (!users?.length) return;
     for (const u of users) await scanAndNotifyUser(u.user_id);
   } catch (err) { console.error('Webhook error:', err); }
@@ -280,7 +234,7 @@ schedule.scheduleJob('*/5 * * * *', async function() {
     const { data: users } = await supabase.from('gmail_tokens').select('user_id');
     if (!users?.length) return;
     for (const u of users) await scanAndNotifyUser(u.user_id);
-  } catch (err) { console.error('Scheduled scan error:', err); }
+  } catch (err) { console.error('Scheduler error:', err); }
 });
 
 // ─── SCAN & NOTIFY ───────────────────────────────────────
@@ -301,10 +255,7 @@ async function scanAndNotifyUser(userId) {
     for (const msg of messages.slice(0, 5)) {
       const key = `${userId}_${msg.id}`;
       const { data: existing } = await supabase.from('notified_emails').select('id').eq('id', key).single();
-      if (!existing) {
-        newMsgs.push(msg);
-        await supabase.from('notified_emails').insert({ id: key, user_id: userId });
-      }
+      if (!existing) { newMsgs.push(msg); await supabase.from('notified_emails').insert({ id: key, user_id: userId }); }
     }
     if (!newMsgs.length) return;
 
@@ -313,7 +264,7 @@ async function scanAndNotifyUser(userId) {
     if (!detections.length) return;
 
     for (const d of detections) {
-      // ✅ Push payload with auto-fill data
+      // ✅ Push payload now includes data for auto-fill
       await webpush.sendNotification(JSON.parse(pushData.subscription), JSON.stringify({
         title: `SubTracks — ${d.serviceName} detected 📬`,
         body: `Amount: ${d.amount || 'N/A'} • Tap to add`,
@@ -326,8 +277,6 @@ async function scanAndNotifyUser(userId) {
 // ─── START SERVER ────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`✅ Gmail backend running on http://localhost:${PORT}`);
-  console.log(`🔗 OAuth callback: ${REDIRECT_URI}`);
-  console.log(`🔑 Google Client ID loaded: ${!!GOOGLE_CLIENT_ID}`);
-  console.log(`🔐 Google Client Secret loaded: ${!!GOOGLE_CLIENT_SECRET}`);
+  console.log(`✅ Backend running on port ${PORT}`);
+  console.log(`🔗 OAuth: ${REDIRECT_URI}`);
 });

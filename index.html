@@ -7379,47 +7379,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-<script>
-  (function() {
-    function autoFillFromNotification() {
-      const params = new URLSearchParams(window.location.search);
-      if (!params.has('service') && !params.has('amount') && !params.has('date')) return;
-
-      // Flexible selectors - adjust if your form uses specific IDs
-      const serviceInput = document.querySelector('input[placeholder*="Service"], input[name="service"], #service-input');
-      const amountInput  = document.querySelector('input[placeholder*="Amount"], input[name="amount"], input[type="number"], #amount-input');
-      const dateInput    = document.querySelector('input[placeholder*="Date"], input[name="date"], input[type="date"], #date-input');
-
-      if (params.get('service') && serviceInput) serviceInput.value = params.get('service');
-      if (params.get('amount') && amountInput) {
-        amountInput.value = params.get('amount');
-        // Trigger input event for frameworks that listen to it
-        amountInput.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-      if (params.get('date') && dateInput) {
-        // Normalize to YYYY-MM-DD for date inputs
-        let d = params.get('date');
-        try {
-          const dateObj = new Date(d);
-          if (!isNaN(dateObj)) d = dateObj.toISOString().split('T')[0];
-        } catch(e) {}
-        dateInput.value = d;
-        dateInput.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-
-      // Open "Add Subscription" modal if your UI hides it initially
-      const addBtn = document.querySelector('[aria-label*="Add"], button:contains("Add Subscription"), .add-sub-btn');
-      if (addBtn) addBtn.click();
-
-      // Clean URL so refresh doesn't re-trigger
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-
-    // Run after DOM + SPA routing settles
-    document.addEventListener('DOMContentLoaded', () => setTimeout(autoFillFromNotification, 600));
-    window.addEventListener('popstate', autoFillFromNotification);
-  })();
-</script>
 
 <script>
 (function() {
@@ -7427,7 +7386,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const params = new URLSearchParams(window.location.search);
     if (!params.has('service') && !params.has('amount')) return;
 
-    // Flexible selectors (adjust if your app uses specific IDs/classes)
     const serviceInput = document.querySelector('input[placeholder*="Service"], input[name="service"], #service-input');
     const amountInput  = document.querySelector('input[placeholder*="Amount"], input[name="amount"], input[type="number"], #amount-input');
     const dateInput    = document.querySelector('input[placeholder*="Date"], input[name="date"], input[type="date"], #date-input');
@@ -7438,35 +7396,23 @@ document.addEventListener('DOMContentLoaded', function() {
       amountInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
     if (dateInput) {
-      // Use extracted date OR fallback to exactly 1 month from now
       let dateVal = params.get('date') || (() => {
         const d = new Date(); d.setMonth(d.getMonth() + 1);
         return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       })();
-      
-      // Convert to YYYY-MM-DD if input type="date", otherwise keep readable format
-      try {
-        const parsed = new Date(dateVal);
-        if (!isNaN(parsed)) dateVal = parsed.toISOString().split('T')[0];
-      } catch(e) {}
-      
+      try { const parsed = new Date(dateVal); if (!isNaN(parsed)) dateVal = parsed.toISOString().split('T')[0]; } catch(e) {}
       dateInput.value = dateVal;
       dateInput.dispatchEvent(new Event('input', { bubbles: true }));
-      dateInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
-    // Open "Add Subscription" modal/view if hidden
-    const addBtn = document.querySelector('[aria-label*="Add"], button:contains("Add Subscription"), .add-sub-btn, a[href*="add"]');
+    const addBtn = document.querySelector('[aria-label*="Add"], button:contains("Add Subscription"), .add-sub-btn');
     if (addBtn) addBtn.click();
 
-    // Clean URL
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // Run on load & when route changes (PWA/SPA safe)
   document.addEventListener('DOMContentLoaded', () => setTimeout(autoFillFromNotification, 500));
   window.addEventListener('focus', autoFillFromNotification);
-  window.addEventListener('popstate', autoFillFromNotification);
 })();
 </script>
 
