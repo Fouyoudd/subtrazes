@@ -587,6 +587,7 @@ app.listen(PORT, () => {
 // Fast polling: scan every 15 seconds for near-instant detection
 // (Gmail Pub/Sub webhook below handles true real-time; this is a safety fallback)
 setInterval(async function() {
+  console.log('Scanning gmail for all users...');
   try {
     const { data: users } = await supabase
       .from('gmail_tokens')
@@ -726,6 +727,6 @@ async function scanAndNotifyUser(userId) {
       );
     }
   } catch (err) {
-    console.error('Scan notify error for', userId, err.message);
+    console.error('Scan notify error for', userId, err.message, err.stack);
   }
 }
