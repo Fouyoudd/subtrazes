@@ -6860,6 +6860,62 @@ document.addEventListener("click", function(e) {
     localStorage.setItem('subtracks-user-id', _urlParams.get('user'));
   }
 
+  // ── Push notification autofill on app open ─────────────────
+  // When the user taps a push notification, sw.js opens:
+  //   index.html?subscriptions=[{...}]&auto=1&source=gmail
+  // We detect that here and auto-open the Add Subscription modal.
+  (function handlePushNotifAutofill() {
+    const rawSubs = _urlParams.get('subscriptions');
+    const isAuto  = _urlParams.get('auto') === '1';
+    if (!rawSubs || !isAuto) return;
+
+    let subs;
+    try { subs = JSON.parse(rawSubs); } catch(_) { return; }
+    if (!Array.isArray(subs) || !subs.length) return;
+
+    // Normalise field names from backend (serviceName → name, etc.)
+    const sub = subs[0];
+    const normalised = {
+      name:        sub.serviceName || sub.name || '',
+      amount:      sub.amount      || sub.price || '',
+      billingDate: sub.billingDate || sub.nextBilling || '',
+      cycle:       sub.cycle       || 'monthly',
+      category:    sub.category    || ''
+    };
+
+    // Wait for the app to fully render before opening modal
+    function tryAutofill(attempts) {
+      const modal = document.getElementById('modal');
+      if (!modal && attempts > 0) {
+        setTimeout(() => tryAutofill(attempts - 1), 300);
+        return;
+      }
+      if (typeof openModalWithData === 'function') {
+        openModalWithData(normalised);
+      } else if (typeof openSubModal === 'function') {
+        openSubModal();
+        setTimeout(function() {
+          const nameField = document.getElementById('subName');
+          if (nameField) nameField.value = normalised.name;
+          const amountField = document.getElementById('subAmount');
+          if (amountField) amountField.value = String(normalised.amount).replace(/[^0-9.]/g,'');
+          const dateField = document.getElementById('subDate');
+          if (dateField && normalised.billingDate) {
+            const parsed = new Date(normalised.billingDate);
+            if (!isNaN(parsed)) dateField.value = parsed.toISOString().slice(0,10);
+          }
+        }, 150);
+      }
+      // Clean up URL so refresh doesn't re-open the modal
+      const clean = location.pathname + location.hash;
+      history.replaceState(null, '', clean);
+    }
+
+    // Give the app ~600ms to render before trying
+    setTimeout(() => tryAutofill(10), 600);
+  })();
+
+
   // Build the backend URL dynamically using the saved user ID
   const _userId = localStorage.getItem('subtracks-user-id') || 'guest';
   const BACKEND_URL = `https://subtracks-production.up.railway.app/api/scan-gmail/${_userId}`;
@@ -7378,225 +7434,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
-</script>
-
-<script>
-(function() {
-  function autoFillFromNotification() {
-    const params = new URLSearchParams(window.location.search);
-    if (!params.has('service') && !params.has('amount')) return;
-
-    // ✅ iOS Cold Start Fix: Wait for SPA/DOM to fully mount before filling
-    const waitForApp = (cb, retries = 12) => {
-      if (document.querySelector('#app, main, .dashboard-container, nav') || retries === 0) {
-        cb();
-      } else {
-        setTimeout(() => waitForApp(cb, retries - 1), 250);
-      }
-    };
-
-    waitForApp(() => {
-      const serviceInput = document.querySelector('input[placeholder*="Service"], input[name="service"], #service-input');
-      const amountInput  = document.querySelector('input[placeholder*="Amount"], input[name="amount"], input[type="number"], #amount-input');
-      const dateInput    = document.querySelector('input[placeholder*="Date"], input[name="date"], input[type="date"], #date-input');
-
-      if (params.get('service') && serviceInput) serviceInput.value = params.get('service');
-      if (params.get('amount') && amountInput) {
-        amountInput.value = params.get('amount');
-        amountInput.dispatchEvent(new Event('input', { bubbles: true }));
-        amountInput.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      if (dateInput) {
-        let dateVal = params.get('date') || (() => {
-          const d = new Date(); d.setMonth(d.getMonth() + 1);
-          return d.toISOString().split('T')[0];
-        })();
-        dateInput.value = dateVal;
-        dateInput.dispatchEvent(new Event('input', { bubbles: true }));
-        dateInput.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-
-      // Open add modal/view
-      const addBtn = document.querySelector('[aria-label*="Add"], button:contains("Add Subscription"), .add-sub-btn');
-      if (addBtn) addBtn.click();
-
-      // ✅ Clean URL AFTER app settles (prevents router/auth reset)
-      setTimeout(() => {
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
-      }, 1500);
-    });
-  }
-
-  // Run on load, focus (iOS background->foreground), and route changes
-  document.addEventListener('DOMContentLoaded', () => setTimeout(autoFillFromNotification, 800));
-  window.addEventListener('focus', autoFillFromNotification);
-  window.addEventListener('popstate', autoFillFromNotification);
-})();
-</script>
-
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then(reg => console.log('✅ SW registered:', reg.scope))
-        .catch(err => console.log('❌ SW failed:', err));
-    });
-  }
-</script>
-
-<script>
-// ✅ iOS PWA Cold-Start Auth Fix
-(function() {
-  // Only run on iOS PWA standalone mode
-  const isIOSPWA = window.navigator.standalone || 
-    (window.matchMedia('(display-mode: standalone)').matches);
-  
-  if (!isIOSPWA) return;
-
-  // Wait for service worker + storage to be ready before checking auth
-  function waitForAuthReady(callback, retries = 20) {
-    const hasSession = localStorage.getItem('supabase.auth.token') || 
-                      sessionStorage.getItem('subtracks-session') ||
-                      document.cookie.includes('subtracks_auth');
-    
-    if (hasSession || retries === 0) {
-      callback();
-    } else {
-      setTimeout(() => waitForAuthReady(callback, retries - 1), 300);
-    }
-  }
-
-  // Intercept initial render to delay auth check
-  const originalRender = window.renderApp || window.initApp || null;
-  
-  if (originalRender) {
-    window.renderApp = window.initApp = function() {
-      waitForAuthReady(() => {
-        // Re-check URL params for auto-fill AFTER session is ready
-        const params = new URLSearchParams(window.location.search);
-        if (params.has('service') || params.has('amount')) {
-          // Trigger auto-fill if params exist
-          window.dispatchEvent(new CustomEvent('subtrack:autofill', { 
-            detail: { service: params.get('service'), amount: params.get('amount'), date: params.get('date') } 
-          }));
-        }
-        originalRender();
-      });
-    };
-  }
-
-  // Fallback: if no render function found, just listen for DOM ready
-  document.addEventListener('DOMContentLoaded', () => {
-    waitForAuthReady(() => {
-      // Force a soft reload of the current view to pick up session
-      if (window.location.hash.includes('#/app/')) {
-        window.dispatchEvent(new Event('popstate'));
-      }
-    });
-  });
-})();
-</script>
-
-<!-- Service Worker Registration -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then(reg => console.log('✅ SW registered:', reg.scope))
-        .catch(err => console.log('❌ SW failed:', err));
-    });
-  }
-</script>
-
-<!-- Auto-Fill from Notification Click -->
-<script>
-(function() {
-  function autoFillFromNotification() {
-    const params = new URLSearchParams(window.location.search);
-    if (!params.has('service') && !params.has('amount')) return;
-
-    // Wait for app to mount (iOS cold-start fix)
-    const waitForApp = (cb, retries = 12) => {
-      if (document.querySelector('#app, main, .dashboard-container, nav') || retries === 0) {
-        cb();
-      } else {
-        setTimeout(() => waitForApp(cb, retries - 1), 250);
-      }
-    };
-
-    waitForApp(() => {
-      const serviceInput = document.querySelector('input[placeholder*="Service"], input[name="service"], #service-input');
-      const amountInput  = document.querySelector('input[placeholder*="Amount"], input[name="amount"], input[type="number"], #amount-input');
-      const dateInput    = document.querySelector('input[placeholder*="Date"], input[name="date"], input[type="date"], #date-input');
-
-      if (params.get('service') && serviceInput) serviceInput.value = params.get('service');
-      if (params.get('amount') && amountInput) {
-        amountInput.value = params.get('amount');
-        amountInput.dispatchEvent(new Event('input', { bubbles: true }));
-        amountInput.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      if (dateInput) {
-        // ✅ Use extracted date OR fallback to exactly 1 month from now
-        let dateVal = params.get('date') || (() => {
-          const d = new Date(); d.setMonth(d.getMonth() + 1);
-          return d.toISOString().split('T')[0]; // YYYY-MM-DD for date inputs
-        })();
-        
-        // Convert readable date to YYYY-MM-DD if needed
-        try {
-          const parsed = new Date(dateVal);
-          if (!isNaN(parsed)) dateVal = parsed.toISOString().split('T')[0];
-        } catch(e) {}
-        
-        dateInput.value = dateVal;
-        dateInput.dispatchEvent(new Event('input', { bubbles: true }));
-        dateInput.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-
-      // Open add modal/view if hidden
-      const addBtn = document.querySelector('[aria-label*="Add"], button:contains("Add Subscription"), .add-sub-btn');
-      if (addBtn) addBtn.click();
-
-      // Clean URL after app settles
-      setTimeout(() => {
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }, 1500);
-    });
-  }
-
-  document.addEventListener('DOMContentLoaded', () => setTimeout(autoFillFromNotification, 800));
-  window.addEventListener('focus', autoFillFromNotification);
-  window.addEventListener('popstate', autoFillFromNotification);
-})();
-</script>
-
-<script>
-(function() {
-  function autoFillFromNotification() {
-    const params = new URLSearchParams(window.location.search);
-    if (!params.has('service') && !params.has('amount')) return;
-
-    const serviceInput = document.querySelector('input[placeholder*="Service"], input[name="service"], #service-input');
-    const amountInput  = document.querySelector('input[placeholder*="Amount"], input[name="amount"], input[type="number"], #amount-input');
-    const dateInput    = document.querySelector('input[placeholder*="Date"], input[name="date"], input[type="date"], #date-input');
-
-    if (params.get('service') && serviceInput) serviceInput.value = params.get('service');
-    if (params.get('amount') && amountInput) {
-      amountInput.value = params.get('amount');
-      amountInput.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    if (params.get('date') && dateInput) {
-      dateInput.value = params.get('date');
-      dateInput.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-
-    // Clean URL
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
-
-  document.addEventListener('DOMContentLoaded', () => setTimeout(autoFillFromNotification, 800));
-})();
 </script>
 
 </body>
