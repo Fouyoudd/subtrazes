@@ -550,33 +550,6 @@ app.post('/api/push/subscribe', async (req, res) => {
   res.json({ success: true });
 });
 
-// Send test push
-app.post('/api/push/send-test', async (req, res) => {
-  const { userId } = req.body;
-  if (!userId) return res.status(400).json({ error: 'Missing userId' });
-
-  const { data } = await supabase
-    .from('push_subscriptions')
-    .select('subscription')
-    .eq('user_id', userId)
-    .single();
-
-  if (!data) return res.status(404).json({ error: 'No subscription found' });
-
-  try {
-    await webpush.sendNotification(
-      JSON.parse(data.subscription),
-      JSON.stringify({
-        title: 'SubTracks 🔔',
-        body: 'Push notifications are working!'
-      })
-    );
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 app.listen(PORT, () => {
   console.log(`Gmail backend running on http://localhost:${PORT}`);
   console.log(`OAuth callback: ${REDIRECT_URI}`);
