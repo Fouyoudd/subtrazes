@@ -16,7 +16,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// ✅ Initialize OAuth2Client FIRST (fixes startup crash)
+// ✅ CONFIG: Initialize oauth2Client FIRST (fixes startup crash)
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI || "http://localhost:3001/auth/google/callback";
@@ -25,6 +25,7 @@ const oauth2Client = new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECR
 const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
+// ✅ Clean arrays (no trailing spaces)
 const SUB_SERVICES = [
   { id: "spotify", name: "Spotify", cat: "Music", froms: ["noreply@spotify.com", "spotify@"], subjects: ["spotify", "spotify premium", "spotify receipt"] },
   { id: "netflix", name: "Netflix", cat: "Video", froms: ["netflix@"], subjects: ["netflix", "netflix receipt", "netflix payment"] },
@@ -88,7 +89,7 @@ function getBodyText(payload) {
   return text;
 }
 
-// ✅ Fixed regex for decimals & currencies
+// ✅ Fixed regex for decimals: \. instead of .
 function extractAmount(text) {
   const clean = String(text || "");
   const patterns = [
@@ -183,7 +184,10 @@ app.post('/api/push/send-test', async (req, res) => {
   const { data } = await supabase.from('push_subscriptions').select('subscription').eq('user_id', userId).single();
   if (!data) return res.status(404).json({ error: 'No subscription' });
   try {
-    await webpush.sendNotification(JSON.parse(data.subscription), JSON.stringify({ title: 'SubTracks 🔔', body: 'Test push', data: { service: 'Test', amount: '9.99', date: 'Next Month' } }));
+    await webpush.sendNotification(JSON.parse(data.subscription), JSON.stringify({
+      title: 'SubTracks 🔔', body: 'Test push',
+      data: { service: 'Test', amount: '9.99', date: 'Next Month' }
+    }));
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -232,7 +236,7 @@ async function scanAndNotifyUser(userId) {
     if (!detections.length) return;
 
     for (const d of detections) {
-      // ✅ Payload now includes auto-fill data
+      // ✅ Push payload now includes auto-fill data
       await webpush.sendNotification(JSON.parse(pushData.subscription), JSON.stringify({
         title: `SubTracks — ${d.serviceName} detected 📬`,
         body: `Amount: ${d.amount || 'N/A'} • Tap to add`,

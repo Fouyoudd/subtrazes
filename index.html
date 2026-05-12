@@ -7445,6 +7445,132 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 </script>
 
+<script>
+// ✅ iOS PWA Cold-Start Auth Fix
+(function() {
+  // Only run on iOS PWA standalone mode
+  const isIOSPWA = window.navigator.standalone || 
+    (window.matchMedia('(display-mode: standalone)').matches);
+  
+  if (!isIOSPWA) return;
+
+  // Wait for service worker + storage to be ready before checking auth
+  function waitForAuthReady(callback, retries = 20) {
+    const hasSession = localStorage.getItem('supabase.auth.token') || 
+                      sessionStorage.getItem('subtracks-session') ||
+                      document.cookie.includes('subtracks_auth');
+    
+    if (hasSession || retries === 0) {
+      callback();
+    } else {
+      setTimeout(() => waitForAuthReady(callback, retries - 1), 300);
+    }
+  }
+
+  // Intercept initial render to delay auth check
+  const originalRender = window.renderApp || window.initApp || null;
+  
+  if (originalRender) {
+    window.renderApp = window.initApp = function() {
+      waitForAuthReady(() => {
+        // Re-check URL params for auto-fill AFTER session is ready
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('service') || params.has('amount')) {
+          // Trigger auto-fill if params exist
+          window.dispatchEvent(new CustomEvent('subtrack:autofill', { 
+            detail: { service: params.get('service'), amount: params.get('amount'), date: params.get('date') } 
+          }));
+        }
+        originalRender();
+      });
+    };
+  }
+
+  // Fallback: if no render function found, just listen for DOM ready
+  document.addEventListener('DOMContentLoaded', () => {
+    waitForAuthReady(() => {
+      // Force a soft reload of the current view to pick up session
+      if (window.location.hash.includes('#/app/')) {
+        window.dispatchEvent(new Event('popstate'));
+      }
+    });
+  });
+})();
+</script>
+
+<!-- Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(reg => console.log('✅ SW registered:', reg.scope))
+        .catch(err => console.log('❌ SW failed:', err));
+    });
+  }
+</script>
+
+<!-- Auto-Fill from Notification Click -->
+<script>
+(function() {
+  function autoFillFromNotification() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('service') && !params.has('amount')) return;
+
+    // Wait for app to mount (iOS cold-start fix)
+    const waitForApp = (cb, retries = 12) => {
+      if (document.querySelector('#app, main, .dashboard-container, nav') || retries === 0) {
+        cb();
+      } else {
+        setTimeout(() => waitForApp(cb, retries - 1), 250);
+      }
+    };
+
+    waitForApp(() => {
+      const serviceInput = document.querySelector('input[placeholder*="Service"], input[name="service"], #service-input');
+      const amountInput  = document.querySelector('input[placeholder*="Amount"], input[name="amount"], input[type="number"], #amount-input');
+      const dateInput    = document.querySelector('input[placeholder*="Date"], input[name="date"], input[type="date"], #date-input');
+
+      if (params.get('service') && serviceInput) serviceInput.value = params.get('service');
+      if (params.get('amount') && amountInput) {
+        amountInput.value = params.get('amount');
+        amountInput.dispatchEvent(new Event('input', { bubbles: true }));
+        amountInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (dateInput) {
+        // ✅ Use extracted date OR fallback to exactly 1 month from now
+        let dateVal = params.get('date') || (() => {
+          const d = new Date(); d.setMonth(d.getMonth() + 1);
+          return d.toISOString().split('T')[0]; // YYYY-MM-DD for date inputs
+        })();
+        
+        // Convert readable date to YYYY-MM-DD if needed
+        try {
+          const parsed = new Date(dateVal);
+          if (!isNaN(parsed)) dateVal = parsed.toISOString().split('T')[0];
+        } catch(e) {}
+        
+        dateInput.value = dateVal;
+        dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+        dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      // Open add modal/view if hidden
+      const addBtn = document.querySelector('[aria-label*="Add"], button:contains("Add Subscription"), .add-sub-btn');
+      if (addBtn) addBtn.click();
+
+      // Clean URL after app settles
+      setTimeout(() => {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }, 1500);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => setTimeout(autoFillFromNotification, 800));
+  window.addEventListener('focus', autoFillFromNotification);
+  window.addEventListener('popstate', autoFillFromNotification);
+})();
+</script>
+
 </body>
 
 </html>

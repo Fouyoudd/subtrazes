@@ -1,7 +1,7 @@
 {
   "name": "SubTracks",
   "short_name": "SubTracks",
-  "start_url": "/",
+  "start_url": "/index.html#/app/dashboard",
   "display": "standalone",
   "background_color": "#f3fbf5",
   "theme_color": "#16a34a",

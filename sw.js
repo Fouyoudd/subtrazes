@@ -1,6 +1,3 @@
-self.addEventListener('install', (e) => self.skipWaiting());
-self.addEventListener('activate', (e) => self.clients.claim());
-
 self.addEventListener('push', function(e) {
   const data = e.data?.json() || {};
   e.waitUntil(
@@ -10,7 +7,7 @@ self.addEventListener('push', function(e) {
       badge: 'https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png',
       vibrate: [200, 100, 200],
       requireInteraction: true,
-      data: data.data || {}
+      data: data.data || {} // ✅ Store payload for click handler
     })
   );
 });
@@ -19,11 +16,17 @@ self.addEventListener('notificationclick', function(e) {
   e.notification.close();
   const d = e.notification.data || {};
   const params = new URLSearchParams();
+  
   if (d.service) params.set('service', d.service);
   if (d.amount) params.set('amount', d.amount);
   if (d.date) params.set('date', d.date);
-  params.set('t', Date.now()); // iOS cache-buster
-
-  const url = params.toString() ? `https://subtrack.surge.sh/?${params.toString()}` : 'https://subtrack.surge.sh';
+  
+  // ✅ iOS cache-buster
+  params.set('_t', Date.now());
+  
+  const url = params.toString() 
+    ? `https://subtrack.surge.sh/index.html?${params.toString()}#/app/dashboard` 
+    : 'https://subtrack.surge.sh/index.html#/app/dashboard';
+    
   e.waitUntil(clients.openWindow(url));
 });
