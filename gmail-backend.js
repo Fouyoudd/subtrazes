@@ -708,4 +708,15 @@ async function scanAndNotifyUser(userId) {
   } catch (err) {
     console.error('Scan notify error for', userId, err.message, err.stack);
   }
+
+  app.post('/api/logout-gmail', async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ error: 'Missing userId' });
+
+  await supabase.from('gmail_tokens').delete().eq('user_id', userId);
+  await supabase.from('push_subscriptions').delete().eq('user_id', userId);
+  
+  res.json({ success: true });
+});
+
 }
