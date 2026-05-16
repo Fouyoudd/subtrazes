@@ -1,7 +1,7 @@
 {
-  "name": "subtracks-gmail-backend",
+  "name": "subtraz-gmail-backend",
   "version": "1.0.0",
-  "description": "Gmail OAuth + subscription detection backend for SubChecks",
+  "description": "Gmail OAuth + subscription detection backend for Subtraz",
   "main": "gmail-backend.js",
   "scripts": {
     "start": "node gmail-backend.js",

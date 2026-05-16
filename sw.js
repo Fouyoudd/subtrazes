@@ -8,23 +8,25 @@ self.addEventListener('activate', function(e) {
 
 self.addEventListener('push', function(e) {
   let data = {};
-  try { data = e.data.json(); } catch(err) { data = { title: 'SubTracks', body: e.data ? e.data.text() : 'New notification' }; }
+  try { data = e.data.json(); } catch(err) { data = { title: 'Subtraz', body: e.data ? e.data.text() : 'New notification' }; }
 
-  let urlToOpen = 'https://subtrack.surge.sh/index.html';
+  let urlToOpen = 'https://subtraz.top/index.html';
   if (data.detection) {
     const params = new URLSearchParams({
       subscriptions: JSON.stringify([data.detection]),
       auto: '1',
       source: 'gmail'
     });
-    urlToOpen = `https://subtrack.surge.sh/index.html?${params.toString()}`;
+    urlToOpen = `https://subtraz.top/index.html?${params.toString()}`;
   }
 
   e.waitUntil(
-    self.registration.showNotification(data.title || 'SubTracks', {
+    self.registration.showNotification(data.title || 'Subtraz', {
       body: data.body || 'Tap to open.',
       icon: 'https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png',
       badge: 'https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png',
+      requireInteraction: true,
+      vibrate: [200, 100, 200],
       data: { url: urlToOpen }
     })
   );
@@ -32,11 +34,11 @@ self.addEventListener('push', function(e) {
 
 self.addEventListener('notificationclick', function(e) {
   e.notification.close();
-  const url = e.notification.data?.url || 'https://subtrack.surge.sh/index.html';
+  const url = e.notification.data?.url || 'https://subtraz.top/index.html';
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(list) {
       for (const client of list) {
-        if (client.url.includes('subtrack.surge.sh') && 'focus' in client) {
+        if ((client.url.includes('subtraz.top') || client.url.includes('subtraz.top')) && 'focus' in client) {
           client.focus();
           return client.navigate(url);
         }

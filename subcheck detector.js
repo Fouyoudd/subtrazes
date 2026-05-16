@@ -1,16 +1,16 @@
 /**
- * SubChecks Subscription Detector
+ * Subtraz Subscription Detector
  * ────────────────────────────────────────────────────────────
  * Drop this before </body> in index.html.
  * Mobile-only. Detects subscription purchase pages on known
  * services and shows a persistent bottom-sheet notification
- * that auto-fills the SubChecks add-subscription form.
+ * that auto-fills the Subtraz add-subscription form.
  * 
  * NO frameworks, NO dependencies, NO backend needed.
  * ────────────────────────────────────────────────────────────
  */
 
-(function SubChecksDetector() {
+(function SubtrazDetector() {
   'use strict';
 
   // ── 1. MOBILE-ONLY GUARD ─────────────────────────────────
@@ -90,7 +90,7 @@
   async function scanGmailForReceipt(userId) {
     try {
       // Add ?test=1 for mock data (remove in production)
-      const response = await fetch(`http://localhost:3001/api/scan-gmail/${userId}?test=1`);
+      const response = await fetch(`https://subtracks-production.up.railway.app/api/scan-gmail/${userId}?test=1`);
       const data = await response.json();
       return data.detections || [];
     } catch (err) {
@@ -222,7 +222,7 @@
           ${detectedApp.icon}
         </div>
         <div class="sc-text">
-          <div class="sc-source">SubChecks · Detected</div>
+          <div class="sc-source">Subtraz · Detected</div>
           <div class="sc-title">Add ${detectedApp.name} subscription?</div>
           <div class="sc-sub">Purchase page detected — log it before you forget.</div>
         </div>
@@ -265,7 +265,7 @@
     setTimeout(() => wrap.classList.remove('sc-shake'), 600);
   }, 9000);
 
-  // ── Action: Add to SubChecks ─────────────────────────────
+  // ── Action: Add to Subtraz ─────────────────────────────
   document.getElementById('sc-add-btn').addEventListener('click', async function () {
     clearInterval(shakeInterval);
     
@@ -288,14 +288,14 @@
       }];
     }
     
-    // Redirect to SubChecks with autofill params
+    // Redirect to Subtraz with autofill params
     const params = new URLSearchParams({
       subscriptions: JSON.stringify(subscriptionsToAdd),
       auto: '1',
       source: window.location.hostname,
     });
     
-    const subchecksURL = '/index.html#/app/subscriptions/add?' + params.toString();
+    const subchecksURL = 'https://subtraz.top/index.html#/app/subscriptions/add?' + params.toString();
     wrap.classList.remove('sc-show');
     
     setTimeout(() => {

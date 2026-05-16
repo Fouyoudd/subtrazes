@@ -1,5 +1,5 @@
 <!-- ============================================================
-  SubTrack — Gmail Receipt Detector
+  Subtraz — Gmail Receipt Detector
   Paste this entire block before </body> in index.html
 
   WHAT THIS DOES:
@@ -203,7 +203,7 @@
 
   // ── CONFIG ────────────────────────────────────────────────────
   // Your Express backend test route
-  const BACKEND_URL = 'http://localhost:3001/api/scan-gmail/guest?test=1';
+  const BACKEND_URL = 'https://subtracks-production.up.railway.app/api/scan-gmail/guest?test=1';
 
 function formatDateForInput(value) {
   if (!value) return nextMonthDate();
@@ -227,7 +227,7 @@ function formatDateForInput(value) {
 
   // ── SHOW / HIDE THE SCAN BUTTON ───────────────────────────────
   // Only show button when the user is inside the app (not on landing page)
-  // SubTrack adds class "app-on" to body when app is active
+  // Subtraz adds class "app-on" to body when app is active
   function syncButtonVisibility() {
     const btn = document.getElementById('gmailScanBtn');
     if (!btn) return;
@@ -235,7 +235,7 @@ function formatDateForInput(value) {
     btn.style.display = inApp ? 'inline-flex' : 'none';
   }
 
-  // Watch for body class changes (SubTrack toggles app-on)
+  // Watch for body class changes (Subtraz toggles app-on)
   const bodyObserver = new MutationObserver(syncButtonVisibility);
   bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
   syncButtonVisibility(); // run once on load
@@ -253,9 +253,9 @@ function formatDateForInput(value) {
   function sendBrowserNotif(sub) {
     if (Notification.permission !== 'granted') return;
     try {
-      const n = new Notification('SubTrack — Subscription Detected 📬', {
-        body: `${sub.name} receipt found. Tap to add it to SubTrack.`,
-        icon: 'SubTrack-logo.png',  // uses your existing logo file
+      const n = new Notification('Subtraz — Subscription Detected 📬', {
+        body: `${sub.name} receipt found. Tap to add it to Subtraz.`,
+        icon: 'Subtraz-logo.png',  // uses your existing logo file
         tag:  'subtrack-detect-' + sub.name, // prevents duplicate notifs
         requireInteraction: true,   // stays until user clicks (desktop)
       });
@@ -266,7 +266,7 @@ function formatDateForInput(value) {
         openModalWithData(sub);
       };
     } catch (e) {
-      console.warn('SubTrack notif error:', e);
+      console.warn('Subtraz notif error:', e);
     }
   }
 
@@ -374,7 +374,7 @@ function formatDateForInput(value) {
       <div class="sc-card-top">
         <div class="sc-app-icon" style="background:${color}20;">${icon}</div>
         <div class="sc-card-text">
-          <div class="sc-card-source">SubTrack · Gmail Detected</div>
+          <div class="sc-card-source">Subtraz · Gmail Detected</div>
           <div class="sc-card-title">${sub.name} subscription found</div>
           <div class="sc-card-sub">Receipt in your Gmail inbox</div>
         </div>
@@ -500,7 +500,7 @@ const found = rawFound.map(function (item) {
       showPop(`✅ Found ${found.length} subscription${found.length > 1 ? 's' : ''} in Gmail!`);
 
     } catch (err) {
-      console.error('SubTrack Gmail scan error:', err);
+      console.error('Subtraz Gmail scan error:', err);
       showPop('❌ Scan failed: ' + err.message);
     } finally {
       // Reset button
@@ -511,9 +511,9 @@ const found = rawFound.map(function (item) {
     }
   }
 
-  // ── SHOW A TOAST (reuse existing SubTrack pop() if available) ─
+  // ── SHOW A TOAST (reuse existing Subtraz pop() if available) ─
   function showPop(msg) {
-    // SubTrack already has a pop() function — use it if available
+    // Subtraz already has a pop() function — use it if available
     if (typeof pop === 'function') {
       pop(msg);
       return;

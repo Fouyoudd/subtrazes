@@ -1,5 +1,5 @@
 /**
- * SubTrack Gmail Scanner Backend
+ * Subtraz Gmail Scanner Backend
  * Node.js/Express backend for Gmail OAuth + subscription receipt detection.
  */
 const webpush = require('web-push');
@@ -19,6 +19,7 @@ const app = express();
 
 app.use(cors({
   origin: [
+    "https://subtraz.top",
     "https://subtrack.surge.sh",
     "http://127.0.0.1:5500",
     "http://localhost:5500",
@@ -308,7 +309,7 @@ if (upsertError) {
 }
 
     
-    res.redirect(`https://subtrack.surge.sh/index.html?gmail=connected&user=${userId}#/app/notifications`);
+    res.redirect(`https://subtraz.top/index.html?gmail=connected&user=${userId}#/app/notifications`);
   } catch (error) {
     console.error("OAuth callback error:", error);
     res.status(500).json({ error: error.message });
@@ -689,7 +690,7 @@ async function scanAndNotifyUser(userId) {
   JSON.parse(pushData.subscription),
   JSON.stringify({
           title: `${detection.serviceName} receipt detected 📬`,
-          body: `Tap to add${amountStr}${dateStr} — auto-filled from Gmail.`,
+          body: `Tap to add${amountStr}${dateStr} - auto-filled from Gmail.`,
           detection: {
             serviceName: detection.serviceName,
             amount: detection.amount,
@@ -701,22 +702,22 @@ async function scanAndNotifyUser(userId) {
       }),
         {
           urgency: 'high',
-          TTL: 60
+          TTL: 86400,
+          topic: 'subtraz-receipt'
         }
       );
     }
   } catch (err) {
     console.error('Scan notify error for', userId, err.message, err.stack);
   }
+}
 
-  app.post('/api/logout-gmail', async (req, res) => {
+app.post('/api/logout-gmail', async (req, res) => {
   const { userId } = req.body;
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
   await supabase.from('gmail_tokens').delete().eq('user_id', userId);
   await supabase.from('push_subscriptions').delete().eq('user_id', userId);
-  
+
   res.json({ success: true });
 });
-
-}
