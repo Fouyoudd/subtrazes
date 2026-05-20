@@ -20,7 +20,6 @@ const app = express();
 app.use(cors({
   origin: [
     "https://subtraz.top",
-    "https://subtrack.surge.sh",
     "http://127.0.0.1:5500",
     "http://localhost:5500",
     "http://localhost:3000",
@@ -590,7 +589,7 @@ app.post('/api/gmail/webhook', async (req, res) => {
 
     if (!email) return;
 
-    // Find user by email — look up gmail_email column (set during OAuth callback)
+    // Find user by email - look up gmail_email column (set during OAuth callback)
     // Fall back to scanning all users if no direct match
     let targetUsers = [];
     if (email) {

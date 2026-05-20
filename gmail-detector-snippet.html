@@ -1,5 +1,5 @@
 <!-- ============================================================
-  Subtraz — Gmail Receipt Detector
+  Subtraz - Gmail Receipt Detector
   Paste this entire block before </body> in index.html
 
   WHAT THIS DOES:
@@ -19,7 +19,7 @@
     bottom: 24px;
     right: 24px;
     z-index: 900;
-    display: none; /* shown only when app is active — see JS */
+    display: none; /* shown only when app is active - see JS */
     align-items: center;
     gap: 8px;
     padding: 12px 20px;
@@ -203,7 +203,7 @@
 
   // ── CONFIG ────────────────────────────────────────────────────
   // Your Express backend test route
-  const BACKEND_URL = 'https://subtracks-production.up.railway.app/api/scan-gmail/guest?test=1';
+  const BACKEND_URL = 'https://Subtraz-production.up.railway.app/api/scan-gmail/guest?test=1';
 
 function formatDateForInput(value) {
   if (!value) return nextMonthDate();
@@ -253,10 +253,10 @@ function formatDateForInput(value) {
   function sendBrowserNotif(sub) {
     if (Notification.permission !== 'granted') return;
     try {
-      const n = new Notification('Subtraz — Subscription Detected 📬', {
+      const n = new Notification('Subtraz - Subscription Detected', {
         body: `${sub.name} receipt found. Tap to add it to Subtraz.`,
         icon: 'Subtraz-logo.png',  // uses your existing logo file
-        tag:  'subtrack-detect-' + sub.name, // prevents duplicate notifs
+        tag:  'Subtraz-detect-' + sub.name, // prevents duplicate notifs
         requireInteraction: true,   // stays until user clicks (desktop)
       });
       // Clicking the notification brings the tab into focus
@@ -272,7 +272,7 @@ function formatDateForInput(value) {
 
   // ── OPEN THE EXISTING #modal AND AUTO-FILL THE FORM ──────────
   function openModalWithData(sub) {
-    // 1. Open the modal — try the existing [data-open] button first
+    // 1. Open the modal - try the existing [data-open] button first
     const openTrigger = document.querySelector('[data-open]');
     if (openTrigger) {
       openTrigger.click();
@@ -284,14 +284,14 @@ function formatDateForInput(value) {
 
     // 2. Small delay so modal is visible before we fill fields
     setTimeout(function () {
-      // Name — e.g. "Spotify"
+      // Name - e.g. "Spotify"
       const nameField = document.getElementById('subName');
       if (nameField) {
         nameField.value = sub.name || '';
         nameField.dispatchEvent(new Event('input', { bubbles: true }));
       }
 
-      // Amount — strip currency symbols, keep numbers
+      // Amount - strip currency symbols, keep numbers
       const amountField = document.getElementById('subAmount');
       if (amountField) {
         const cleaned = String(sub.amount || sub.price || '')
@@ -300,14 +300,14 @@ function formatDateForInput(value) {
         amountField.dispatchEvent(new Event('input', { bubbles: true }));
       }
 
-      // Billing date — next month from today
+      // Billing date - next month from today
       const dateField = document.getElementById('subDate');
       if (dateField) {
         dateField.value = sub.nextBillingDate || nextMonthDate();
         dateField.dispatchEvent(new Event('change', { bubbles: true }));
       }
 
-      // Project — default to Personal
+      // Project - default to Personal
       const projectField = document.getElementById('subProject');
       if (projectField) {
         // Try to match "Personal" option, fallback to first option
@@ -317,7 +317,7 @@ function formatDateForInput(value) {
         projectField.dispatchEvent(new Event('change', { bubbles: true }));
       }
 
-      // Status — Active
+      // Status - Active
       const statusField = document.getElementById('subStatus');
       if (statusField) {
         const options = Array.from(statusField.options);
@@ -513,7 +513,7 @@ const found = rawFound.map(function (item) {
 
   // ── SHOW A TOAST (reuse existing Subtraz pop() if available) ─
   function showPop(msg) {
-    // Subtraz already has a pop() function — use it if available
+    // Subtraz already has a pop() function - use it if available
     if (typeof pop === 'function') {
       pop(msg);
       return;

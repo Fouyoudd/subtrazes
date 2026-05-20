@@ -77,7 +77,7 @@
 
   // Check for purchase intent signals
   const hasBuySignal = BUY_SIGNALS.some(kw => combined.includes(kw));
-  if (!hasBuySignal) return; // User is just browsing — don't notify
+  if (!hasBuySignal) return; // User is just browsing - don't notify
 
   // ── 5. BUILD & INJECT NOTIFICATION ──────────────────────
   function getNextMonthDate() {
@@ -90,7 +90,7 @@
   async function scanGmailForReceipt(userId) {
     try {
       // Add ?test=1 for mock data (remove in production)
-      const response = await fetch(`https://subtracks-production.up.railway.app/api/scan-gmail/${userId}?test=1`);
+      const response = await fetch(`https://subtraz-production.up.railway.app/api/scan-gmail/${userId}?test=1`);
       const data = await response.json();
       return data.detections || [];
     } catch (err) {
@@ -224,7 +224,7 @@
         <div class="sc-text">
           <div class="sc-source">Subtraz · Detected</div>
           <div class="sc-title">Add ${detectedApp.name} subscription?</div>
-          <div class="sc-sub">Purchase page detected — log it before you forget.</div>
+          <div class="sc-sub">Purchase page detected - log it before you forget.</div>
         </div>
       </div>
       <div class="sc-autofill">
@@ -270,7 +270,7 @@
     clearInterval(shakeInterval);
     
     // Try to scan Gmail for receipts first
-    const userId = localStorage.getItem('subtracks-user-id') || 'guest';
+    const userId = localStorage.getItem('subtraz-user-id') || localStorage.getItem('subtracks-user-id') || 'guest';
     const gmailDetections = await scanGmailForReceipt(userId);
     
     let subscriptionsToAdd = [];

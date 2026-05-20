@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SubTrack Pro — Free for New Users</title>
+  <title>Subtraz Pro - Free During Early Access</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -296,9 +296,9 @@ h1 {
 <div class="shell">
   <a class="brand" href="index.html#/app/billing">
     <span class="logo-wrap">
-      <img src="https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png" alt="SubTrack" onerror="this.style.display='none'">
+      <img src="https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png" alt="Subtraz" onerror="this.style.display='none'">
     </span>
-    SubTrack
+    Subtraz
   </a>
 
   <div class="checkout-card">
@@ -306,27 +306,27 @@ h1 {
 
       <!-- LEFT -->
       <section class="left">
-        <span class="status-pill"><span class="pulse"></span>🎉 Lifetime Pro — 100% Free</span>
+        <span class="status-pill"><span class="pulse"></span>🎉 Lifetime Pro - 100% Free</span>
 
-        <h1>Get SubTrack Pro<br>for Free</h1>
+        <h1>Get Subtraz Pro<br>for Free</h1>
 
         <p class="lead">
-          Pro is completely free for new users during our beta. Confirm your Gmail, drop a quick note, and we'll activate Pro on your account within 24 hours — no payment ever.
+          Pro is completely free for new users during our beta. Confirm your Gmail, drop a quick note, and we'll activate Pro on your account within 24 hours - no payment ever.
           <br><br>
-          <strong style="color:var(--green);">Normally $15 — free for you today.</strong>
+          <strong style="color:var(--green);">Normally $15 - free for you today.</strong>
         </p>
 
         <div class="account-chip">
           <div class="chip-av" id="chipAv">SC</div>
           <div>
-            <div class="chip-name" id="chipName">SubTrack user</div>
-            <div class="chip-email" id="chipEmail">Enter your Gmail below</div>
+            <div class="chip-name" id="chipName">Subtraz user</div>
+            <div class="chip-email" id="chipEmail">Enter your account email below</div>
           </div>
         </div>
 
         <div class="form-card">
           <div class="form-head">Confirm your access details</div>
-          <div class="form-sub">Your request goes directly to our inbox — we activate Pro within 24 hours. No payment, no third-party forms.</div>
+          <div class="form-sub">Your request goes directly to our inbox - we activate Pro within 24 hours. No payment, no third-party forms.</div>
 
           <div class="field">
             <label for="iName">Your name</label>
@@ -334,7 +334,7 @@ h1 {
           </div>
 
           <div class="field">
-            <label for="iEmail">SubTrack Gmail</label>
+            <label for="iEmail">Subtraz account email</label>
             <input type="email" id="iEmail" placeholder="your@gmail.com" autocomplete="email" />
           </div>
 
@@ -352,20 +352,20 @@ h1 {
             <div class="step-num">1</div>
             <div>
               <strong>Enter your Gmail</strong>
-              <span>Use the Gmail linked to your SubTrack account.</span>
+              <span>Use the Gmail linked to your Subtraz account.</span>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div>
               <strong>Leave quick feedback</strong>
-              <span>One sentence — how you found us or what you think.</span>
+              <span>One sentence - how you found us or what you think.</span>
             </div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
             <div>
-              <strong>Submit — Pro activated within 24 hrs</strong>
+              <strong>Submit - Pro activated within 24 hrs</strong>
               <span>Request goes directly to our inbox. 100% free, no payment needed.</span>
             </div>
           </div>
@@ -380,9 +380,9 @@ h1 {
 
         <hr class="order-divider">
 
-        <div class="order-row"><span>SubTrack Lifetime Pro</span><strong>$0.00</strong></div>
+        <div class="order-row"><span>Subtraz Lifetime Pro</span><strong>$0.00</strong></div>
         <div class="order-row"><span>Billing</span><strong>One-time</strong></div>
-        <div class="order-row"><span>Renewal</span><strong>None — ever</strong></div>
+        <div class="order-row"><span>Renewal</span><strong>None - ever</strong></div>
 
         <div class="order-total">
           <span>Total due today</span>
@@ -392,10 +392,10 @@ h1 {
         <div class="order-msg" id="orderMsg"></div>
 
         <button class="order-submit" id="orderBtn" disabled>Fill in your details first</button>
-        <button class="order-back" id="backBtn">← Back to SubTrack</button>
+        <button class="order-back" id="backBtn">← Back to Subtraz</button>
 
         <p class="order-note">
-          Beta: Pro is manually activated within 24 hours. No payment ever required — genuinely free for you.
+          Beta: Pro is manually activated within 24 hours. No payment ever required - genuinely free for you.
         </p>
       </aside>
 
@@ -412,10 +412,10 @@ h1 {
       We received your Pro activation request.
       <strong style="color:#4ade80;"> Pro will be active on your account within 24 hours.</strong>
       <br><br>
-      Watch your Gmail — we'll confirm once it's live.
+      Watch your email - we'll confirm once it's live.
     </p>
     <div class="overlay-confirm">
-      <strong>✓ Request received — <span id="confirmEmail"></span></strong>
+      <strong>✓ Request received - <span id="confirmEmail"></span></strong>
     </div>
     <button class="overlay-dash" id="dashBtn">Go to Dashboard →</button>
   </div>
@@ -423,13 +423,13 @@ h1 {
 
 <script>
 /* =====================================================
-   SubTrack Pro Checkout
+   Subtraz Pro Checkout
    Sends request to owner Gmail via two methods:
    1) Web3Forms API (free, real emails, no backend)
    2) mailto: fallback (always works)
    ===================================================== */
 
-const OWNER_EMAIL     = "clydebusinessnarido@gmail.com";
+const OWNER_EMAIL     = "support@subtraz.top";
 
 // ─── Web3Forms: get a free access key at web3forms.com ───────────────────────
 // Sign up free → verify email → copy your access key → paste below
@@ -479,8 +479,8 @@ function hideMsg() { orderMsg.className = "order-msg"; }
 
 function setLoading(on) {
   const s = '<span class="spinner dark"></span>';
-  leftBtn.innerHTML   = on ? s + "Sending…" : (formReady() ? "Submit &amp; Activate Pro ✓" : "Fill in your details above first");
-  orderBtn.innerHTML  = on ? '<span class="spinner"></span>Sending…' : (formReady() ? "Submit &amp; Activate Pro ✓" : "Fill in your details first");
+  leftBtn.innerHTML   = on ? s + "Sending..." : (formReady() ? "Submit and Activate Pro - Free" : "Fill in your details above first");
+  orderBtn.innerHTML  = on ? '<span class="spinner"></span>Sending...' : (formReady() ? "Submit and Activate Pro - Free" : "Fill in your details first");
   leftBtn.disabled    = on || !formReady();
   orderBtn.disabled   = on || !formReady();
 }
@@ -491,16 +491,16 @@ function formReady() {
 
 function updateChip() {
   chipAv.textContent    = initials(iName.value.trim() || iEmail.value.trim() || "SC");
-  chipName.textContent  = iName.value.trim() || "SubTrack user";
-  chipEmail.textContent = iEmail.value.trim() || "Enter your Gmail below";
+  chipName.textContent  = iName.value.trim() || "Subtraz user";
+  chipEmail.textContent = iEmail.value.trim() || "Enter your account email below";
 }
 
 function updateReady() {
   const ok    = formReady();
-  const label = ok ? "Submit &amp; Activate Pro ✓" : "Fill in your details above first";
+  const label = ok ? "Submit and Activate Pro - Free" : "Fill in your details above first";
   leftBtn.innerHTML  = label;
   leftBtn.disabled   = !ok;
-  orderBtn.innerHTML = ok ? "Submit &amp; Activate Pro ✓" : "Fill in your details first";
+  orderBtn.innerHTML = ok ? "Submit and Activate Pro - Free" : "Fill in your details first";
   orderBtn.disabled  = !ok;
 }
 
@@ -523,11 +523,11 @@ function loadDraft() {
 
 function emailBody(d) {
   return [
-    "SubTrack Pro Activation Request",
+    "Subtraz Pro Activation Request",
     "=================================",
     "",
     "Name:      " + (d.name || "Not provided"),
-    "Gmail:     " + d.email,
+    "Account email:     " + d.email,
     "User ID:   " + (d.uid  || "N/A"),
     "",
     "Feedback:",
@@ -536,8 +536,8 @@ function emailBody(d) {
     "Submitted: " + new Date().toLocaleString(),
     "",
     "─────────────────────────────────",
-    "Please activate Pro access for this Gmail within 24 hours.",
-    "— SubTrack Pro Checkout"
+    "Please activate Pro access for this account email within 24 hours.",
+    "- Subtraz Pro Checkout"
   ].join("\n");
 }
 
@@ -550,7 +550,7 @@ async function handleSubmit() {
     uid:      urlUID
   };
 
-  if (!validEmail(d.email)) { showMsg("Please enter a valid Gmail address.", "error"); return; }
+  if (!validEmail(d.email)) { showMsg("Please enter a valid email address.", "error"); return; }
   if (d.feedback.length < 3) { showMsg("Please add a quick bit of feedback!", "error"); return; }
 
   hideMsg();
@@ -560,7 +560,7 @@ async function handleSubmit() {
   let sent = false;
 
   // ── 1. Web3Forms (real email, free, no backend) ──────────────────────────────
-  // Requires a free access key from web3forms.com — takes 30 seconds to set up.
+  // Requires a free access key from web3forms.com - takes 30 seconds to set up.
   // Your key routes the submission to OWNER_EMAIL above automatically.
   if (W3F_ACCESS_KEY !== "YOUR_WEB3FORMS_ACCESS_KEY") {
     try {
@@ -569,8 +569,8 @@ async function handleSubmit() {
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body:    JSON.stringify({
           access_key: W3F_ACCESS_KEY,
-          from_name:  d.name || "SubTrack User",
-          subject:    "[SubTrack Pro Request] " + d.email,
+          from_name:  d.name || "Subtraz User",
+          subject:    "[Subtraz Pro Request] " + d.email,
           email:      d.email,           // reply-to address
           message:    emailBody(d)
         })
@@ -582,7 +582,7 @@ async function handleSubmit() {
 
   // ── 2. mailto: fallback (opens Gmail / default email app, always works) ──────
   if (!sent) {
-    const sub  = encodeURIComponent("[SubTrack Pro Request] " + d.email);
+    const sub  = encodeURIComponent("[Subtraz Pro Request] " + d.email);
     const body = encodeURIComponent(emailBody(d));
     const a    = document.createElement("a");
     a.href     = "mailto:" + OWNER_EMAIL + "?subject=" + sub + "&body=" + body;
@@ -601,7 +601,7 @@ async function handleSubmit() {
     overlay.classList.add("show");
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
   } else {
-    showMsg("Something went wrong — please email " + OWNER_EMAIL + " directly.", "error");
+    showMsg("Something went wrong - please email " + OWNER_EMAIL + " directly.", "error");
   }
 }
 

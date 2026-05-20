@@ -1,18 +1,19 @@
  const TALLY_FORM_URL = "https://tally.so/r/wgJKOl"; // Replace with your actual Tally form URL for pro activation requests
-const STORAGE_KEY = "SubTrack_pending_pro_payment";
+const STORAGE_KEY = "subtraz_pending_pro_activation";
+const LEGACY_STORAGE_KEY = "SubTrack_pending_pro_payment";
 
 const params = new URLSearchParams(location.search);
 const passedEmail = params.get("email") || "";
 const passedName = params.get("name") || "";
 const passedUserId = params.get("user_id") || "";
 
-const SubTrackEmail = document.getElementById("SubTrackEmail");
-const feedbackText = document.getElementById("feedbackText");
-const payBtn = document.getElementById("payBtn");
-const payBtnLeft = document.getElementById("payBtnLeft");
+const SubtrazEmail = document.getElementById("iEmail") || document.getElementById("SubTrackEmail") || document.getElementById("SubtrazEmail");
+const feedbackText = document.getElementById("iFeedback") || document.getElementById("feedbackText");
+const payBtn = document.getElementById("orderBtn") || document.getElementById("payBtn");
+const payBtnLeft = document.getElementById("leftBtn") || document.getElementById("payBtnLeft");
 const backBtn = document.getElementById("backBtn");
-const message = document.getElementById("message");
-const activationPopup = document.getElementById("activationPopup");
+const message = document.getElementById("orderMsg") || document.getElementById("message");
+const activationPopup = document.getElementById("overlay") || document.getElementById("activationPopup");
 
 function validEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -27,32 +28,36 @@ function initials(value) {
 }
 
 function showMessage(text) {
+  if (!message) return;
   message.textContent = text;
   message.classList.add("show");
 }
 
 function loadSaved() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY)) || {}; } catch { return {}; }
 }
 
 function saveDetails() {
   const data = {
-    SubTrackEmail: SubTrackEmail.value.trim(),
+    SubtrazEmail: SubtrazEmail.value.trim(),
     feedback: feedbackText.value.trim(),
     userId: passedUserId,
     savedAt: new Date().toISOString()
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  try { localStorage.removeItem(LEGACY_STORAGE_KEY); } catch {}
   return data;
 }
 
 function updateReady() {
-  const emailOk = validEmail(SubTrackEmail.value.trim());
+  const emailOk = validEmail(SubtrazEmail.value.trim());
   const feedbackOk = feedbackText.value.trim().length >= 3;
   const ready = emailOk && feedbackOk;
-  const label = ready ? "Submit & Activate Pro — Free ✓" : "Enter your details above first";
-  payBtn.disabled = !ready;
-  payBtn.textContent = label;
+  const label = ready ? "Submit and Activate Pro - Free" : "Enter your details above first";
+  if (payBtn) {
+    payBtn.disabled = !ready;
+    payBtn.textContent = label;
+  }
   if (payBtnLeft) {
     payBtnLeft.disabled = !ready;
     payBtnLeft.textContent = label;
@@ -62,52 +67,61 @@ function updateReady() {
 }
 
 function showActivationPopup() {
-  activationPopup.style.display = "flex";
+  if (activationPopup) {
+    activationPopup.style.display = "flex";
+    activationPopup.classList.add("show");
+  }
 }
 
 function boot() {
+  if (!SubtrazEmail || !feedbackText) return;
   const saved = loadSaved();
-  SubTrackEmail.value = saved.SubTrackEmail || passedEmail || "";
+  SubtrazEmail.value = saved.SubtrazEmail || passedEmail || "";
   feedbackText.value = saved.feedback || "";
-  document.getElementById("displayName").textContent = passedName || "SubChecks user";
-  document.getElementById("displayEmail").textContent = SubTrackEmail.value || "Confirm your Gmail below";
-  document.getElementById("avatar").textContent = initials(passedName || SubTrackEmail.value || "SC");
+  const displayNameEl = document.getElementById("displayName") || document.getElementById("chipName");
+  if (displayNameEl) displayNameEl.textContent = passedName || "Subtraz user";
+  const displayEmailEl = document.getElementById("displayEmail") || document.getElementById("chipEmail");
+  if (displayEmailEl) displayEmailEl.textContent = SubtrazEmail.value || "Confirm your account email below";
+  const avatarEl = document.getElementById("avatar") || document.getElementById("chipAv");
+  if (avatarEl) avatarEl.textContent = initials(passedName || SubtrazEmail.value || "SC");
   updateReady();
 
   // Fix logo
   const logoEls = document.querySelectorAll(".logo");
   logoEls.forEach(logo => {
-    logo.innerHTML = '<img src="https://i.imgur.com/gZLFHsa.png" alt="SubChecks" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;">';
+    logo.innerHTML = '<img src="https://i.imgur.com/gZLFHsa.png" alt="Subtraz" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;">';
   });
 }
 
-SubTrackEmail.addEventListener("input", () => {
-  document.getElementById("displayEmail").textContent = SubTrackEmail.value || "Confirm your Gmail below";
-  document.getElementById("avatar").textContent = initials(passedName || SubTrackEmail.value || "SC");
+SubtrazEmail?.addEventListener("input", () => {
+  const displayEmailEl = document.getElementById("displayEmail") || document.getElementById("chipEmail");
+  if (displayEmailEl) displayEmailEl.textContent = SubtrazEmail.value || "Confirm your account email below";
+  const avatarEl = document.getElementById("avatar") || document.getElementById("chipAv");
+  if (avatarEl) avatarEl.textContent = initials(passedName || SubtrazEmail.value || "SC");
   updateReady();
 });
 
-feedbackText.addEventListener("input", updateReady);
+feedbackText?.addEventListener("input", updateReady);
 
-payBtn.addEventListener("click", handleSubmit);
+payBtn?.addEventListener("click", handleSubmit);
 if (payBtnLeft) payBtnLeft.addEventListener("click", handleSubmit);
 
 async function handleSubmit() {
   const data = saveDetails();
 
-  if (!validEmail(data.SubTrackEmail)) {
-    showMessage("Please enter your SubChecks Gmail first.");
+  if (!validEmail(data.SubtrazEmail)) {
+    showMessage("Please enter your Subtraz account email first.");
     return;
   }
   if (!data.feedback || data.feedback.length < 3) {
-    showMessage("Please add a quick bit of feedback — it really helps!");
+    showMessage("Please add a quick bit of feedback - it really helps!");
     return;
   }
 
   // Submit to Tally
   const tallyUrl =
     TALLY_FORM_URL +
-    "?SubTrack_email=" + encodeURIComponent(data.SubTrackEmail) +
+    "?Subtraz_email=" + encodeURIComponent(data.SubtrazEmail) +
     "&feedback=" + encodeURIComponent(data.feedback) +
     "&user_id=" + encodeURIComponent(data.userId || "");
 
@@ -118,8 +132,8 @@ async function handleSubmit() {
   showActivationPopup();
 }
 
-backBtn.addEventListener("click", () => {
-  location.href = "testing.html#/app/billing";
+backBtn?.addEventListener("click", () => {
+  location.href = "index.html#/app/billing";
 });
 
 boot();
