@@ -11422,24 +11422,32 @@ if (
   }
 
   function isUpgradeButton(el) {
-    const text = [
-      el.textContent || "",
-      el.id || "",
-      el.name || "",
-      el.getAttribute("aria-label") || "",
-      el.getAttribute("href") || "",
-      el.dataset?.view || ""
-    ].join(" ").toLowerCase();
+  if (!el) return false;
 
-    return (
-      el.hasAttribute("data-upgrade") ||
-      text.includes("upgrade to pro") ||
-      text.includes("get lifetime pro") ||
-      text.includes("get pro") ||
-      text.includes("premium") ||
-      text.includes("pro-checkout.html")
-    );
+  if (
+    el.id === "subtrazPremiumContinueBtn" ||
+    el.id === "subtrazPremiumReceiptBtn" ||
+    el.closest("#subtrazPremiumSuccessOverlay")
+  ) {
+    return false;
   }
+
+  const text = [
+    el.textContent || "",
+    el.name || "",
+    el.getAttribute("aria-label") || "",
+    el.getAttribute("href") || "",
+    el.dataset?.view || ""
+  ].join(" ").toLowerCase();
+
+  return (
+    el.hasAttribute("data-upgrade") ||
+    text.includes("upgrade to pro") ||
+    text.includes("get lifetime pro") ||
+    text.includes("get pro") ||
+    text.includes("pro-checkout.html")
+  );
+}
 
   document.addEventListener("click", function (event) {
     const btn = event.target.closest("button, a, [role='button']");
