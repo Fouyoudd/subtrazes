@@ -11445,6 +11445,351 @@ document.addEventListener('DOMContentLoaded', async function() {
 })();
 </script>
 
+<script>
+/* ===== Subtraz Premium Success Popup ===== */
+(function () {
+  "use strict";
+
+  function getSupabaseClient() {
+    if (window.supabaseClient) return window.supabaseClient;
+    if (typeof supabaseClient !== "undefined") return supabaseClient;
+    return null;
+  }
+
+  function getPaymentParams() {
+    const params = new URLSearchParams(window.location.search);
+
+    return {
+      payment: params.get("payment"),
+      orderId: params.get("order_id") || params.get("order") || "unknown",
+      email: params.get("email") || ""
+    };
+  }
+
+  function makeSeenKey(orderId) {
+    return "subtraz_seen_premium_success_" + String(orderId || "unknown");
+  }
+
+  async function getFreshProfilePlan() {
+    const client = getSupabaseClient();
+
+    if (!client || !client.auth) {
+      return {
+        ok: false,
+        plan: "free",
+        error: "Supabase is not ready."
+      };
+    }
+
+    const sessionResult = await client.auth.getSession();
+    const user = sessionResult?.data?.session?.user;
+
+    if (!user) {
+      return {
+        ok: false,
+        plan: "free",
+        error: "Please log in to confirm Premium status."
+      };
+    }
+
+    const profileResult = await client
+      .from("profiles")
+      .select("id, email, plan, pro_activated_at, lemon_order_id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileResult.error) {
+      return {
+        ok: false,
+        plan: "free",
+        error: profileResult.error.message
+      };
+    }
+
+    const profile = profileResult.data || {};
+
+    if (typeof currentPlan !== "undefined") {
+      currentPlan = profile.plan || "free";
+    }
+
+    return {
+      ok: true,
+      plan: profile.plan || "free",
+      profile
+    };
+  }
+
+  function addPremiumPopupStyles() {
+    if (document.getElementById("subtrazPremiumSuccessStyles")) return;
+
+    const style = document.createElement("style");
+    style.id = "subtrazPremiumSuccessStyles";
+    style.textContent = `
+      .subtraz-premium-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgba(15, 23, 42, .62);
+        backdrop-filter: blur(10px);
+      }
+
+      .subtraz-premium-card {
+        width: min(440px, 100%);
+        border-radius: 28px;
+        border: 1px solid rgba(255,255,255,.16);
+        background: #0f172a;
+        color: #fff;
+        padding: 30px 26px;
+        text-align: center;
+        box-shadow: 0 34px 90px rgba(0,0,0,.42);
+        animation: subtrazPremiumPop .22s ease-out both;
+      }
+
+      @keyframes subtrazPremiumPop {
+        from { opacity: 0; transform: translateY(10px) scale(.96); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      .subtraz-premium-icon {
+        width: 68px;
+        height: 68px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        margin: 0 auto 18px;
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+        color: #fff;
+        font-size: 32px;
+        font-weight: 900;
+        box-shadow: 0 16px 42px rgba(34,197,94,.32);
+      }
+
+      .subtraz-premium-card h2 {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.15;
+        letter-spacing: -.04em;
+      }
+
+      .subtraz-premium-card p {
+        margin: 12px 0 0;
+        color: rgba(255,255,255,.72);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
+      .subtraz-premium-small {
+        margin-top: 14px;
+        padding: 11px 13px;
+        border-radius: 14px;
+        background: rgba(74, 222, 128, .10);
+        border: 1px solid rgba(74, 222, 128, .22);
+        color: #86efac;
+        font-size: 12px;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+      }
+
+      .subtraz-premium-actions {
+        display: grid;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .subtraz-premium-btn {
+        width: 100%;
+        border: 0;
+        border-radius: 16px;
+        padding: 14px 16px;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 900;
+        cursor: pointer;
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+        color: #fff;
+        box-shadow: 0 14px 34px rgba(34,197,94,.25);
+      }
+
+      .subtraz-premium-secondary {
+        background: rgba(255,255,255,.08);
+        color: rgba(255,255,255,.78);
+        box-shadow: none;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function closePremiumPopup(orderId) {
+    localStorage.setItem(makeSeenKey(orderId), "true");
+
+    const overlay = document.getElementById("subtrazPremiumSuccessOverlay");
+    if (overlay) overlay.remove();
+
+    const cleanUrl = window.location.origin + window.location.pathname + "#/app/dashboard";
+    history.replaceState(null, "", cleanUrl);
+
+    if (typeof goRoute === "function") {
+      goRoute("/app/dashboard");
+    } else {
+      location.hash = "#/app/dashboard";
+    }
+
+    if (typeof renderAll === "function") {
+      renderAll();
+    }
+
+    if (typeof updateSignedInUI === "function") {
+      updateSignedInUI();
+    }
+  }
+
+  function showPremiumSuccessPopup(orderId, email) {
+    if (document.getElementById("subtrazPremiumSuccessOverlay")) return;
+
+    addPremiumPopupStyles();
+
+    const overlay = document.createElement("div");
+    overlay.id = "subtrazPremiumSuccessOverlay";
+    overlay.className = "subtraz-premium-overlay";
+
+    overlay.innerHTML = `
+      <div class="subtraz-premium-card" role="dialog" aria-modal="true">
+        <div class="subtraz-premium-icon">✓</div>
+        <h2>Congratulations, you are Premium for life.</h2>
+        <p>
+          Thank you so much for buying Subtraz Premium.
+          Your account now has lifetime access to Premium features.
+        </p>
+        <div class="subtraz-premium-small">
+          Order: ${String(orderId || "confirmed")}
+          ${email ? "<br>Account: " + String(email) : ""}
+        </div>
+        <div class="subtraz-premium-actions">
+          <button class="subtraz-premium-btn" id="subtrazPremiumContinueBtn">
+            Continue to dashboard
+          </button>
+          <button class="subtraz-premium-btn subtraz-premium-secondary" id="subtrazPremiumReceiptBtn">
+            Try Receipt Auto-Fill
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    document.getElementById("subtrazPremiumContinueBtn")?.addEventListener("click", function () {
+      closePremiumPopup(orderId);
+    });
+
+    document.getElementById("subtrazPremiumReceiptBtn")?.addEventListener("click", function () {
+      localStorage.setItem(makeSeenKey(orderId), "true");
+
+      const cleanUrl = window.location.origin + window.location.pathname + "#/app/notifications";
+      history.replaceState(null, "", cleanUrl);
+
+      if (typeof goRoute === "function") {
+        goRoute("/app/notifications");
+      } else {
+        location.hash = "#/app/notifications";
+      }
+
+      overlay.remove();
+    });
+  }
+
+  function showPremiumPendingPopup(orderId) {
+    if (document.getElementById("subtrazPremiumSuccessOverlay")) return;
+
+    addPremiumPopupStyles();
+
+    const overlay = document.createElement("div");
+    overlay.id = "subtrazPremiumSuccessOverlay";
+    overlay.className = "subtraz-premium-overlay";
+
+    overlay.innerHTML = `
+      <div class="subtraz-premium-card" role="dialog" aria-modal="true">
+        <div class="subtraz-premium-icon">…</div>
+        <h2>Payment received.</h2>
+        <p>
+          Subtraz is confirming your Premium access.
+          This can take a few seconds if the payment webhook is still finishing.
+        </p>
+        <div class="subtraz-premium-actions">
+          <button class="subtraz-premium-btn" id="subtrazPremiumCheckAgainBtn">
+            Check Premium status
+          </button>
+          <button class="subtraz-premium-btn subtraz-premium-secondary" id="subtrazPremiumLaterBtn">
+            Go to dashboard
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    document.getElementById("subtrazPremiumCheckAgainBtn")?.addEventListener("click", function () {
+      overlay.remove();
+      checkPremiumSuccessFromReturn(true);
+    });
+
+    document.getElementById("subtrazPremiumLaterBtn")?.addEventListener("click", function () {
+      overlay.remove();
+
+      const cleanUrl = window.location.origin + window.location.pathname + "#/app/dashboard";
+      history.replaceState(null, "", cleanUrl);
+
+      if (typeof goRoute === "function") {
+        goRoute("/app/dashboard");
+      } else {
+        location.hash = "#/app/dashboard";
+      }
+    });
+  }
+
+  async function checkPremiumSuccessFromReturn(manualCheck) {
+    const params = getPaymentParams();
+
+    if (params.payment !== "success") return;
+
+    if (localStorage.getItem(makeSeenKey(params.orderId)) === "true") {
+      return;
+    }
+
+    let tries = manualCheck ? 1 : 5;
+
+    while (tries > 0) {
+      const result = await getFreshProfilePlan();
+
+      if (result.ok && result.plan === "pro") {
+        showPremiumSuccessPopup(params.orderId, params.email);
+        return;
+      }
+
+      tries -= 1;
+
+      if (tries > 0) {
+        await new Promise(function (resolve) {
+          setTimeout(resolve, 2500);
+        });
+      }
+    }
+
+    showPremiumPendingPopup(params.orderId);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
+      setTimeout(checkPremiumSuccessFromReturn, 600);
+    });
+  } else {
+    setTimeout(checkPremiumSuccessFromReturn, 600);
+  }
+})();
+</script>
+
 </body>
 
 </html>
