@@ -9,7 +9,7 @@ webpush.setVapidDetails(
   process.env.VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );
-
+const crypto = require("crypto");
 const cors = require("cors");
 const express = require("express");
 const { google } = require("googleapis");
@@ -29,7 +29,12 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({
+  limit: "2mb",
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 
 // Config
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -556,6 +561,161 @@ app.post('/api/push/subscribe', async (req, res) => {
 
   if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
+});
+
+console.log("Lemon Squeezy webhook route loaded");
+
+function verifyLemonSqueezySignature(req) {
+  const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
+  const signature = req.get("X-Signature");
+
+  if (!secret || !signature || !req.rawBody) {
+    return false;
+  }
+
+  const digest = crypto
+    .createHmac("sha256", secret)
+    .update(req.rawBody)
+    .digest("hex");
+
+  const sigBuffer = Buffer.from(signature, "utf8");
+  const digestBuffer = Buffer.from(digest, "utf8");
+
+  if (sigBuffer.length !== digestBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(sigBuffer, digestBuffer);
+}
+
+app.get("/api/lemonsqueezy/health", (req, res) => {
+  res.json({
+    ok: true,
+    route: "lemonsqueezy webhook ready"
+  });
+});
+
+app.post("/api/lemonsqueezy/webhook", async (req, res) => {
+  try {
+    if (!verifyLemonSqueezySignature(req)) {
+      return res.status(401).json({
+        ok: false,
+        error: "Invalid Lemon Squeezy signature"
+      });
+    }
+
+    const eventName =
+      req.get("X-Event-Name") ||
+      req.body?.meta?.event_name ||
+      "";
+
+    if (eventName !== "order_created") {
+      return res.json({
+        ok: true,
+        ignored: true,
+        eventName
+      });
+    }
+
+    const payload = req.body || {};
+    const data = payload.data || {};
+    const attrs = data.attributes || {};
+    const custom = payload.meta?.custom_data || {};
+
+    const userId = String(custom.user_id || custom.uid || "").trim();
+
+    const email = String(
+      custom.email ||
+      attrs.user_email ||
+      attrs.customer_email ||
+      attrs.email ||
+      ""
+    ).trim().toLowerCase();
+
+    const orderId = String(
+      data.id ||
+      attrs.identifier ||
+      attrs.order_number ||
+      `order:${email}:${Date.now()}`
+    );
+
+    if (!email && !userId) {
+      return res.status(400).json({
+        ok: false,
+        error: "No user_id or email found"
+      });
+    }
+
+    await supabase
+      .from("lemon_orders")
+      .upsert({
+        id: orderId,
+        user_id: userId || null,
+        email: email || null,
+        event_name: eventName,
+        payload
+      });
+
+    const proUpdate = {
+      plan: "pro",
+      lemon_order_id: orderId,
+      lemon_customer_email: email || null,
+      pro_activated_at: new Date().toISOString()
+    };
+
+    let updatedProfile = null;
+
+    if (userId) {
+      const byUser = await supabase
+        .from("profiles")
+        .update(proUpdate)
+        .eq("id", userId)
+        .select("id, email, plan")
+        .maybeSingle();
+
+      if (byUser.error) {
+        console.error("Pro update by user id failed:", byUser.error.message);
+      }
+
+      updatedProfile = byUser.data || null;
+    }
+
+    if (!updatedProfile && email) {
+      const byEmail = await supabase
+        .from("profiles")
+        .update(proUpdate)
+        .ilike("email", email)
+        .select("id, email, plan")
+        .maybeSingle();
+
+      if (byEmail.error) {
+        console.error("Pro update by email failed:", byEmail.error.message);
+      }
+
+      updatedProfile = byEmail.data || null;
+    }
+
+    console.log("Lemon Squeezy order processed:", {
+      eventName,
+      email,
+      userId,
+      orderId,
+      activated: !!updatedProfile
+    });
+
+    return res.json({
+      ok: true,
+      activated: !!updatedProfile,
+      profile: updatedProfile
+    });
+  } catch (error) {
+    console.error("Lemon Squeezy webhook error:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: error.message
+    });
+  }
 });
 
 app.listen(PORT, () => {
