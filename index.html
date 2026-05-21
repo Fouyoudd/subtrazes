@@ -11275,6 +11275,79 @@ document.addEventListener('DOMContentLoaded', async function() {
 })();
 </script>
 
+<script>
+/* ===== Force Gmail Connect button for Android APK ===== */
+(function () {
+  "use strict";
+
+  const SUBTRAZ_BACKEND_ORIGIN = "https://subtracks-production.up.railway.app";
+
+  function isCapacitorApp() {
+    return !!(
+      window.Capacitor &&
+      typeof window.Capacitor.isNativePlatform === "function" &&
+      window.Capacitor.isNativePlatform()
+    );
+  }
+
+  function getPlugins() {
+    return window.Capacitor && window.Capacitor.Plugins
+      ? window.Capacitor.Plugins
+      : {};
+  }
+
+  function isGmailConnectButton(el) {
+    const text = [
+      el.textContent || "",
+      el.id || "",
+      el.name || "",
+      el.getAttribute("aria-label") || "",
+      el.getAttribute("href") || ""
+    ].join(" ").toLowerCase();
+
+    return (
+      text.includes("continue to gmail") ||
+      text.includes("connect gmail") ||
+      text.includes("gmail receipt") ||
+      text.includes("receipt auto-fill")
+    );
+  }
+
+  document.addEventListener("click", async function (event) {
+    const btn = event.target.closest("button, a");
+    if (!btn) return;
+    if (!isGmailConnectButton(btn)) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+      const gmailAuthUrl = SUBTRAZ_BACKEND_ORIGIN + "/auth/google";
+
+    btn.disabled = true;
+    const oldText = btn.textContent;
+    btn.textContent = "Opening Gmail...";
+
+    try {
+      const plugins = getPlugins();
+
+      if (isCapacitorApp() && plugins.Browser && plugins.Browser.open) {
+        await plugins.Browser.open({ url: gmailAuthUrl });
+      } else {
+        window.location.href = gmailAuthUrl;
+      }
+    } catch (err) {
+      alert("Could not open Gmail connection: " + (err.message || err));
+      window.location.href = gmailAuthUrl;
+    } finally {
+      setTimeout(function () {
+        btn.disabled = false;
+        btn.textContent = oldText;
+      }, 1500);
+    }
+  }, true);
+})();
+</script>
+
 </body>
 
 </html>
