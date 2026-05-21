@@ -11348,6 +11348,103 @@ document.addEventListener('DOMContentLoaded', async function() {
 })();
 </script>
 
+<script>
+/* ===== Subtraz Lemon Squeezy Upgrade Button ===== */
+(function () {
+  "use strict";
+
+  const LEMON_CHECKOUT_URL = "https://subtracks.lemonsqueezy.com/checkout/buy/acd9821d-8396-4a45-bd38-75cef920927b";
+
+  function getSupabaseClient() {
+    if (window.supabaseClient) return window.supabaseClient;
+    if (typeof supabaseClient !== "undefined") return supabaseClient;
+    return null;
+  }
+
+  function showMessage(message) {
+    if (typeof pop === "function") {
+      pop(message);
+    } else {
+      alert(message);
+    }
+  }
+
+  async function openSubtrazProCheckout() {
+    const client = getSupabaseClient();
+
+    if (!client || !client.auth) {
+      showMessage("Please log in first before upgrading.");
+      return;
+    }
+
+    const { data, error } = await client.auth.getSession();
+
+    if (error) {
+      showMessage(error.message || "Could not check your login session.");
+      return;
+    }
+
+    const user = data?.session?.user;
+
+    if (!user) {
+      showMessage("Please log in first before upgrading.");
+
+      if (typeof setAuthMode === "function") {
+        setAuthMode("login");
+      }
+
+      document.body.classList.remove("app-on", "home-on");
+      document.body.classList.add("signin-on");
+
+      return;
+    }
+
+    const checkoutUrl = new URL(LEMON_CHECKOUT_URL);
+
+    checkoutUrl.searchParams.set("checkout[email]", user.email || "");
+    checkoutUrl.searchParams.set("checkout[custom][user_id]", user.id);
+    checkoutUrl.searchParams.set("checkout[custom][email]", user.email || "");
+    checkoutUrl.searchParams.set("checkout[custom][source]", "subtraz-app");
+
+    window.location.href = checkoutUrl.toString();
+  }
+
+  function isUpgradeButton(el) {
+    const text = [
+      el.textContent || "",
+      el.id || "",
+      el.name || "",
+      el.getAttribute("aria-label") || "",
+      el.getAttribute("href") || "",
+      el.dataset?.view || ""
+    ].join(" ").toLowerCase();
+
+    return (
+      el.hasAttribute("data-upgrade") ||
+      text.includes("upgrade to pro") ||
+      text.includes("get lifetime pro") ||
+      text.includes("get pro") ||
+      text.includes("premium") ||
+      text.includes("pro-checkout.html")
+    );
+  }
+
+  document.addEventListener("click", function (event) {
+    const btn = event.target.closest("button, a, [role='button']");
+    if (!btn) return;
+
+    if (!isUpgradeButton(btn)) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    openSubtrazProCheckout();
+  }, true);
+
+  window.openSubtrazProCheckout = openSubtrazProCheckout;
+})();
+</script>
+
 </body>
 
 </html>
