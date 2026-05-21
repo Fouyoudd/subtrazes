@@ -260,23 +260,26 @@ function findServiceFromEmail(from, subject, body) {
 
 // 1. OAuth: redirect to Google
 app.get("/auth/google", (req, res) => {
-  const authUrl = oauth2Client.generateAuthUrl({
-    access_type: "offline",
-    prompt: "consent",
-    scope: [
-      "openid",
-      "email",
-      "profile",
-      "https://www.googleapis.com/auth/gmail.readonly"
-    ]
-  });
+  const platform = req.query.platform === "android" ? "android" : "web";
+
+const authUrl = oauth2Client.generateAuthUrl({
+  access_type: "offline",
+  prompt: "consent",
+  state: platform,
+  scope: [
+    "openid",
+    "email",
+    "profile",
+    "https://www.googleapis.com/auth/gmail.readonly"
+  ]
+});
 
   res.redirect(authUrl);
 });
 
 // 2. OAuth: callback
 app.get("/auth/google/callback", async (req, res) => {
-  const { code } = req.query;
+  const { code, state } = req.query;
 
   if (!code) {
     return res.status(400).send("Missing authorization code");
@@ -308,7 +311,12 @@ if (upsertError) {
 }
 
     
-    res.redirect(`https://subtraz.top/index.html?gmail=connected&user=${userId}#/app/notifications`);
+    const redirectUrl =
+  state === "android"
+    ? `com.subtraz.app://auth-callback?gmail=connected&user=${encodeURIComponent(userId)}`
+    : `https://subtraz.top/index.html?gmail=connected&user=${encodeURIComponent(userId)}#/app/notifications`;
+
+res.redirect(redirectUrl);
   } catch (error) {
     console.error("OAuth callback error:", error);
     res.status(500).json({ error: error.message });

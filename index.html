@@ -5086,7 +5086,7 @@ body.app-on .a2hsCornerBtn {
 <!-- Mobile Bottom Nav -->
 <nav class="mobile-nav sc-feature-nav" id="mobileNav">
   <button class="feature-main-pill premium" type="button" data-feature-menu="premium">
-    <span class="feature-pill-icon">♕</span>
+    <span class="feature-pill-icon">👑</span>
     <span>Premium Feature</span>
   </button>
 
@@ -10836,6 +10836,442 @@ document.addEventListener('DOMContentLoaded', async function() {
   }, true);
 
   document.addEventListener('DOMContentLoaded', syncReceiptAgree);
+})();
+</script>
+
+<script>
+/* ===== Subtraz auth safety patch: create account, login, show password ===== */
+(function () {
+  "use strict";
+
+  function showAuthMessage(message) {
+    if (typeof pop === "function") {
+      pop(message);
+    } else {
+      alert(message);
+    }
+  }
+
+  function isEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+  }
+
+  function findAuthFormFromElement(el) {
+    const form = el?.closest?.("form");
+    if (!form) return null;
+
+    const emailInput = form.querySelector('input[type="email"], input[name*="email" i], input[id*="email" i]');
+    const passwordInputs = Array.from(form.querySelectorAll('input[type="password"], input[data-password-field]'));
+
+    if (!emailInput || !passwordInputs.length) return null;
+    return form;
+  }
+
+  function getAuthFormData(form) {
+    const emailInput = form.querySelector('input[type="email"], input[name*="email" i], input[id*="email" i]');
+    const passwordInputs = Array.from(form.querySelectorAll('input[type="password"], input[data-password-field]'));
+
+    const usernameInput = Array.from(form.querySelectorAll("input")).find(input => {
+      const label = [
+        input.id,
+        input.name,
+        input.placeholder,
+        input.getAttribute("aria-label")
+      ].join(" ").toLowerCase();
+
+      return (
+        !input.matches('input[type="email"]') &&
+        !input.matches('input[type="password"]') &&
+        !input.hasAttribute("data-password-field") &&
+        (label.includes("username") || label.includes("name"))
+      );
+    });
+
+    return {
+      email: emailInput ? emailInput.value.trim() : "",
+      username: usernameInput ? usernameInput.value.trim() : "",
+      password: passwordInputs[0] ? passwordInputs[0].value : "",
+      confirmPassword: passwordInputs[1] ? passwordInputs[1].value : "",
+      hasConfirmPassword: passwordInputs.length > 1
+    };
+  }
+
+  function detectAuthMode(form, submitter) {
+    const text = [
+      submitter?.textContent || "",
+      form?.textContent || "",
+      form?.dataset?.authMode || "",
+      document.body?.dataset?.authMode || ""
+    ].join(" ").toLowerCase();
+
+    const data = getAuthFormData(form);
+
+    if (text.includes("create account") || text.includes("sign up") || data.hasConfirmPassword) {
+      return "signup";
+    }
+
+    return "login";
+  }
+
+  async function saveProfileQuietly(user, username) {
+    try {
+      if (!supabaseClient || !user || !username) return;
+
+      await supabaseClient
+        .from("profiles")
+        .upsert({
+          id: user.id,
+          user_id: user.id,
+          email: user.email,
+          username: username,
+          name: username,
+          full_name: username,
+          updated_at: new Date().toISOString()
+        });
+    } catch (err) {
+      console.warn("Profile save skipped:", err.message);
+    }
+  }
+
+  async function handleAuthSubmit(form, submitter) {
+    if (!window.supabaseClient && typeof supabaseClient === "undefined") {
+      showAuthMessage("Supabase is not loaded yet. Refresh and try again.");
+      return;
+    }
+
+    const client = window.supabaseClient || supabaseClient;
+    const mode = detectAuthMode(form, submitter);
+    const data = getAuthFormData(form);
+
+    if (!isEmail(data.email)) {
+      showAuthMessage("Please enter a valid email.");
+      return;
+    }
+
+    if (!data.password || data.password.length < 6) {
+      showAuthMessage("Password must be at least 6 characters.");
+      return;
+    }
+
+    if (mode === "signup" && data.password !== data.confirmPassword) {
+      showAuthMessage("Passwords do not match.");
+      return;
+    }
+
+    const oldText = submitter ? submitter.textContent : "";
+    if (submitter) {
+      submitter.disabled = true;
+      submitter.textContent = mode === "signup" ? "Creating account..." : "Logging in...";
+    }
+
+    try {
+      if (mode === "signup") {
+        const { data: signUpData, error } = await client.auth.signUp({
+          email: data.email,
+          password: data.password,
+          options: {
+            data: {
+              username: data.username,
+              name: data.username,
+              full_name: data.username
+            }
+          }
+        });
+
+        if (error) {
+          showAuthMessage(error.message);
+          return;
+        }
+
+        if (signUpData?.user) {
+          await saveProfileQuietly(signUpData.user, data.username);
+        }
+
+        if (signUpData?.session) {
+          if (typeof finishRealSignIn === "function") {
+            await finishRealSignIn(signUpData.session);
+          }
+
+          if (typeof goRoute === "function") {
+            goRoute("/app/dashboard");
+          } else {
+            document.body.classList.remove("signin-on");
+            document.body.classList.add("app-on");
+          }
+
+          showAuthMessage("Account created.");
+          return;
+        }
+
+        showAuthMessage("Account created. Please log in to continue.");
+        return;
+      }
+
+      const { data: loginData, error } = await client.auth.signInWithPassword({
+        email: data.email,
+        password: data.password
+      });
+
+      if (error) {
+        showAuthMessage(error.message);
+        return;
+      }
+
+      if (typeof finishRealSignIn === "function") {
+        await finishRealSignIn(loginData.session);
+      }
+
+      if (typeof goRoute === "function") {
+        goRoute("/app/dashboard");
+      } else {
+        document.body.classList.remove("signin-on");
+        document.body.classList.add("app-on");
+      }
+
+      showAuthMessage("Logged in.");
+    } catch (err) {
+      showAuthMessage(err.message || "Auth failed. Try again.");
+    } finally {
+      if (submitter) {
+        submitter.disabled = false;
+        submitter.textContent = oldText;
+      }
+    }
+  }
+
+  function addShowPasswordButtons() {
+    document.querySelectorAll('input[type="password"]').forEach(input => {
+      if (input.dataset.passwordToggleReady === "true") return;
+
+      input.dataset.passwordToggleReady = "true";
+      input.dataset.passwordField = "true";
+
+      const wrap = document.createElement("div");
+      wrap.className = "subtraz-password-wrap";
+
+      input.parentNode.insertBefore(wrap, input);
+      wrap.appendChild(input);
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "subtraz-password-toggle";
+      btn.textContent = "Show";
+
+      btn.addEventListener("click", () => {
+        const isHidden = input.type === "password";
+        input.type = isHidden ? "text" : "password";
+        btn.textContent = isHidden ? "Hide" : "Show";
+      });
+
+      wrap.appendChild(btn);
+    });
+  }
+
+  function bindAuthPatch() {
+    addShowPasswordButtons();
+
+    document.addEventListener("submit", function (event) {
+      const form = findAuthFormFromElement(event.target);
+      if (!form) return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      const submitter = event.submitter || form.querySelector('button[type="submit"], button');
+      handleAuthSubmit(form, submitter);
+    }, true);
+
+    document.addEventListener("click", function (event) {
+      const btn = event.target.closest("button");
+      if (!btn) return;
+
+      const form = findAuthFormFromElement(btn);
+      if (!form) return;
+
+      const label = (btn.textContent || "").trim().toLowerCase();
+      const isAuthButton =
+        label.includes("create account") ||
+        label.includes("log in") ||
+        label.includes("login") ||
+        label.includes("continue");
+
+      if (!isAuthButton) return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      handleAuthSubmit(form, btn);
+    }, true);
+  }
+
+  const style = document.createElement("style");
+  style.textContent = `
+    .subtraz-password-wrap {
+      position: relative;
+      width: 100%;
+      display: block;
+    }
+
+    .subtraz-password-wrap input {
+      width: 100%;
+      padding-right: 76px !important;
+    }
+
+    .subtraz-password-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 0;
+      background: transparent;
+      color: #16a34a;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      padding: 6px 8px;
+      z-index: 2;
+    }
+
+    .subtraz-password-toggle:hover {
+      opacity: .8;
+    }
+  `;
+  document.head.appendChild(style);
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindAuthPatch);
+  } else {
+    bindAuthPatch();
+  }
+})();
+</script>
+
+<script>
+/* ===== Subtraz Gmail connected button lock ===== */
+(function () {
+  "use strict";
+
+  const GMAIL_CONNECTED_KEY = "subtraz_gmail_connected";
+  const GMAIL_USER_KEY = "subtracks-user-id";
+
+  function getUrlParams() {
+    return new URLSearchParams(window.location.search);
+  }
+
+  function markGmailConnectedFromUrl() {
+    const params = getUrlParams();
+    const gmailConnected = params.get("gmail") === "connected";
+    const gmailUser = params.get("user");
+
+    if (gmailConnected) {
+      localStorage.setItem(GMAIL_CONNECTED_KEY, "true");
+
+      if (gmailUser) {
+        localStorage.setItem(GMAIL_USER_KEY, gmailUser);
+      }
+    }
+  }
+
+  function isGmailConnected() {
+    return (
+      localStorage.getItem(GMAIL_CONNECTED_KEY) === "true" ||
+      !!localStorage.getItem(GMAIL_USER_KEY)
+    );
+  }
+
+  function looksLikeConnectGmailButton(el) {
+    if (!el) return false;
+
+    const text = (el.textContent || "").trim().toLowerCase();
+    const id = (el.id || "").toLowerCase();
+    const href = (el.getAttribute && el.getAttribute("href") || "").toLowerCase();
+
+    if (text.includes("test gmail scan")) return false;
+    if (text.includes("disconnect gmail")) return false;
+
+    return (
+      text.includes("connect gmail") ||
+      text.includes("receipt auto-fill") ||
+      id.includes("connectgmail") ||
+      id.includes("gmailconnect") ||
+      href.includes("/auth/google")
+    );
+  }
+
+  function lockGmailButtons() {
+    if (!isGmailConnected()) return;
+
+    const candidates = Array.from(document.querySelectorAll("button, a"));
+
+    candidates.forEach(el => {
+      if (!looksLikeConnectGmailButton(el)) return;
+
+      el.textContent = "Gmail connected";
+      el.classList.add("subtraz-gmail-connected-btn");
+      el.setAttribute("aria-disabled", "true");
+      el.setAttribute("data-gmail-connected", "true");
+
+      if (el.tagName === "BUTTON") {
+        el.disabled = true;
+      }
+
+      if (el.tagName === "A") {
+        el.dataset.originalHref = el.getAttribute("href") || "";
+        el.removeAttribute("href");
+        el.setAttribute("role", "button");
+      }
+    });
+  }
+
+  function bindGmailConnectBlocker() {
+    document.addEventListener("click", function (event) {
+      const el = event.target.closest("button, a");
+      if (!el) return;
+
+      if (isGmailConnected() && looksLikeConnectGmailButton(el)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        if (typeof pop === "function") {
+          pop("Gmail is already connected.");
+        }
+
+        lockGmailButtons();
+      }
+    }, true);
+  }
+
+  const style = document.createElement("style");
+  style.textContent = `
+    .subtraz-gmail-connected-btn {
+      opacity: .72 !important;
+      cursor: not-allowed !important;
+      background: #dcfce7 !important;
+      color: #16a34a !important;
+      border: 1px solid #bbf7d0 !important;
+      box-shadow: none !important;
+      pointer-events: auto !important;
+    }
+  `;
+  document.head.appendChild(style);
+
+  markGmailConnectedFromUrl();
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
+      lockGmailButtons();
+      bindGmailConnectBlocker();
+
+      setTimeout(lockGmailButtons, 800);
+      setTimeout(lockGmailButtons, 2000);
+    });
+  } else {
+    lockGmailButtons();
+    bindGmailConnectBlocker();
+
+    setTimeout(lockGmailButtons, 800);
+    setTimeout(lockGmailButtons, 2000);
+  }
 })();
 </script>
 
