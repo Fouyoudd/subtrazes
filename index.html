@@ -11191,7 +11191,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     return (
       text.includes("connect gmail") ||
-      text.includes("receipt auto-fill") ||
       id.includes("connectgmail") ||
       id.includes("gmailconnect") ||
       href.includes("/auth/google")
@@ -11297,6 +11296,19 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   function isGmailConnectButton(el) {
+
+if (
+  el.closest("[data-view]") ||
+  el.closest("[data-route]") ||
+  el.closest(".feature-card") ||
+  el.closest(".nav-item") ||
+  el.closest(".mobile-nav-item") ||
+  el.closest(".sidebar") ||
+  el.closest(".bottom-nav")
+) {
+  return false;
+}
+
     const text = [
       el.textContent || "",
       el.id || "",
