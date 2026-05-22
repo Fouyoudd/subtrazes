@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Subtraz Desktop Alerts",
+  "version": "0.3.0",
+  "description": "Get desktop receipt alerts and quickly add detected subscriptions to Subtraz.",
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://subtracks-production.up.railway.app/*",
+    "http://localhost:3001/*"
+  ],
+  "action": {
+    "default_title": "Subtraz Desktop Alerts",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://subtraz.top/*",
+        "https://www.subtraz.top/*",
+        "http://127.0.0.1/*",
+        "http://localhost/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

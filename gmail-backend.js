@@ -2,30 +2,61 @@
  * Subtraz Gmail Scanner Backend
  * Node.js/Express backend for Gmail OAuth + subscription receipt detection.
  */
-const webpush = require('web-push');
+require("dotenv").config();
 
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL,
-  process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
-);
+const webpush = require("web-push");
 const crypto = require("crypto");
 const cors = require("cors");
 const express = require("express");
 const { google } = require("googleapis");
-require("dotenv").config();
+
+const hasVapidConfig =
+  !!process.env.VAPID_EMAIL &&
+  !!process.env.VAPID_PUBLIC_KEY &&
+  !!process.env.VAPID_PRIVATE_KEY;
+
+if (hasVapidConfig) {
+  webpush.setVapidDetails(
+    process.env.VAPID_EMAIL,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+
+  console.log("Web push VAPID config loaded.");
+} else {
+  console.log("Web push VAPID config missing. Push sending is disabled for this local test.");
+}
 
 const app = express();
 
+const allowedWebOrigins = new Set([
+  "https://subtraz.top",
+  "https://www.subtraz.top",
+  "http://127.0.0.1:5500",
+  "http://localhost:5500",
+  "http://localhost:3000",
+  "http://localhost:8081"
+]);
+
 app.use(cors({
-  origin: [
-    "https://subtraz.top",
-    "http://127.0.0.1:5500",
-    "http://localhost:5500",
-    "http://localhost:3000",
-    "http://localhost:8081"
-  ],
+  origin: function (origin, callback) {
+    const isAllowedWebOrigin = !origin || allowedWebOrigins.has(origin);
+    const isTestingChromeExtension =
+      typeof origin === "string" &&
+      origin.startsWith("chrome-extension://");
+
+    if (isAllowedWebOrigin || isTestingChromeExtension) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Origin not allowed by CORS"));
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Subtraz-Extension-Token"
+  ],
   credentials: true
 }));
 
@@ -285,6 +316,7 @@ const authUrl = oauth2Client.generateAuthUrl({
 // 2. OAuth: callback
 app.get("/auth/google/callback", async (req, res) => {
   const { code, state } = req.query;
+  const oauthState = String(state || "");
 
   if (!code) {
     return res.status(400).send("Missing authorization code");
@@ -293,38 +325,131 @@ app.get("/auth/google/callback", async (req, res) => {
   try {
     const { tokens } = await oauth2Client.getToken(code);
 
-    const userId = tokens.id_token ? decodeIdToken(tokens.id_token) : "user";
+    const googleUserId = tokens.id_token
+      ? decodeIdToken(tokens.id_token)
+      : "user";
 
-    // Decode email from id_token for webhook lookups
     let gmailEmail = null;
+
     if (tokens.id_token) {
       try {
-        const parts = tokens.id_token.split('.');
-        const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+        const parts = tokens.id_token.split(".");
+        const payload = JSON.parse(
+          Buffer.from(parts[1], "base64url").toString()
+        );
+
         gmailEmail = payload.email || null;
-      } catch(_) {}
+      } catch (_) {}
     }
 
-    const { error: upsertError } = await supabase
-  .schema('public')
-  .from('gmail_tokens')
-  .upsert({ user_id: userId, tokens, gmail_email: gmailEmail, updated_at: new Date() });
-if (upsertError) {
-  console.error("Supabase save error:", upsertError);
-} else {
-  console.log("Token saved to Supabase for user:", userId);
-}
+    /*
+      New secure Subtraz flow:
+      state contains a one-time server-verified connection record.
+    */
+    if (oauthState.startsWith("subtraz:")) {
+      const stateHash = hashGmailConnectState(oauthState);
 
-    
-    const redirectUrl =
-  state === "android"
-    ? `com.subtraz.app://auth-callback?gmail=connected&user=${encodeURIComponent(userId)}`
-    : `https://subtraz.top/index.html?gmail=connected&user=${encodeURIComponent(userId)}#/app/notifications`;
+      const { data: connectState, error: stateLookupError } = await supabase
+        .from("gmail_connect_states")
+        .select("state_hash, user_id, platform, return_origin, expires_at, used_at")
+        .eq("state_hash", stateHash)
+        .maybeSingle();
 
-res.redirect(redirectUrl);
+      if (stateLookupError || !connectState) {
+        return res.status(400).send("Invalid Gmail connection request.");
+      }
+
+      if (connectState.used_at) {
+        return res.status(400).send("This Gmail connection request has already been used.");
+      }
+
+      if (new Date(connectState.expires_at).getTime() < Date.now()) {
+        return res.status(400).send("This Gmail connection request has expired. Please try again.");
+      }
+
+      const usedAt = new Date().toISOString();
+
+      const { data: consumedState, error: consumeStateError } = await supabase
+        .from("gmail_connect_states")
+        .update({
+          used_at: usedAt
+        })
+        .eq("state_hash", stateHash)
+        .is("used_at", null)
+        .select("state_hash")
+        .maybeSingle();
+
+      if (consumeStateError || !consumedState) {
+        return res.status(400).send("This Gmail connection request was already completed.");
+      }
+
+      const { error: tokenSaveError } = await supabase
+        .from("gmail_tokens")
+        .upsert({
+          user_id: googleUserId,
+          subtraz_user_id: connectState.user_id,
+          tokens,
+          gmail_email: gmailEmail,
+          updated_at: new Date().toISOString()
+        });
+
+      if (tokenSaveError) {
+        console.error("Secure Gmail token save error:", tokenSaveError.message);
+
+        return res.status(500).send("Could not save Gmail connection.");
+      }
+
+      console.log("Secure Gmail connection saved:", {
+        googleUserId,
+        subtrazUserId: connectState.user_id,
+        gmailEmail,
+        platform: connectState.platform
+      });
+
+      if (connectState.platform === "android") {
+        return res.redirect(
+          `com.subtraz.app://auth-callback?gmail=connected&user=${encodeURIComponent(googleUserId)}`
+        );
+      }
+
+      const returnOrigin = getSafeGmailReturnOrigin(connectState.return_origin);
+
+      return res.redirect(
+        `${returnOrigin}/index.html?gmail=connected&user=${encodeURIComponent(googleUserId)}#/app/receiptAutoFill`
+      );
+    }
+
+    /*
+      Old flow kept temporarily so your existing app does not break
+      before the website Gmail button is moved to the secure route.
+    */
+    const { error: oldFlowSaveError } = await supabase
+      .from("gmail_tokens")
+      .upsert({
+        user_id: googleUserId,
+        tokens,
+        gmail_email: gmailEmail,
+        updated_at: new Date().toISOString()
+      });
+
+    if (oldFlowSaveError) {
+      console.error("Legacy Gmail token save error:", oldFlowSaveError.message);
+
+      return res.status(500).send("Could not save Gmail connection.");
+    }
+
+    const legacyRedirectUrl =
+      oauthState === "android"
+        ? `com.subtraz.app://auth-callback?gmail=connected&user=${encodeURIComponent(googleUserId)}`
+        : `https://subtraz.top/index.html?gmail=connected&user=${encodeURIComponent(googleUserId)}#/app/receiptAutoFill`;
+
+    return res.redirect(legacyRedirectUrl);
   } catch (error) {
-    console.error("OAuth callback error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("OAuth callback error:", error.message);
+
+    return res.status(500).json({
+      error: error.message
+    });
   }
 });
 
@@ -442,16 +567,17 @@ function parseEmailsForSubscriptions(messages) {
       const cycle = extractCycle(body);
 
       return {
-        service: service.id,
-        serviceName: service.name,
-        category: service.cat,
-        amount,
-        billingDate,
-        cycle,
-        emailDate: date,
-        from,
-        subject
-      };
+  gmailMessageId: msg.id || null,
+  service: service.id,
+  serviceName: service.name,
+  category: service.cat,
+  amount,
+  billingDate,
+  cycle,
+  emailDate: date,
+  from,
+  subject
+};
     })
     .filter(Boolean);
 }
@@ -547,6 +673,722 @@ function decodeIdToken(token) {
   const payload = JSON.parse(Buffer.from(parts[1], "base64").toString());
   return payload.sub || "user";
 }
+
+/* =========================================================
+   Subtraz Chrome Extension Pairing
+   Website creates a short code.
+   Extension claims the code and receives its own token.
+   ========================================================= */
+
+function hashExtensionValue(value) {
+  return crypto
+    .createHash("sha256")
+    .update(String(value || ""))
+    .digest("hex");
+}
+
+function makeExtensionPairCode() {
+  return String(crypto.randomInt(0, 1000000)).padStart(6, "0");
+}
+
+function readBearerToken(req) {
+  const header = String(req.get("Authorization") || "").trim();
+
+  if (!header.toLowerCase().startsWith("bearer ")) {
+    return "";
+  }
+
+  return header.slice(7).trim();
+}
+
+async function requireSubtrazAccount(req, res) {
+  const accessToken = readBearerToken(req);
+
+  if (!accessToken) {
+    res.status(401).json({
+      ok: false,
+      error: "Missing Subtraz login token"
+    });
+    return null;
+  }
+
+  const { data, error } = await supabase.auth.getUser(accessToken);
+  const user = data?.user || null;
+
+  if (error || !user) {
+    res.status(401).json({
+      ok: false,
+      error: "Invalid or expired Subtraz login"
+    });
+    return null;
+  }
+
+  return user;
+}
+
+/* =========================================================
+   Secure Gmail connection start
+   Connects Gmail access to the signed-in Subtraz account.
+   ========================================================= */
+
+function hashGmailConnectState(value) {
+  return crypto
+    .createHash("sha256")
+    .update(String(value || ""))
+    .digest("hex");
+}
+
+app.get("/api/gmail/connect/health", (req, res) => {
+  res.json({
+    ok: true,
+    route: "secure gmail connection ready"
+  });
+});
+
+function getSafeGmailReturnOrigin(value) {
+  const allowedOrigins = new Set([
+    "https://subtraz.top",
+    "https://www.subtraz.top",
+    "http://127.0.0.1:5500",
+    "http://localhost:5500"
+  ]);
+
+  const requestedOrigin = String(value || "").trim();
+
+  return allowedOrigins.has(requestedOrigin)
+    ? requestedOrigin
+    : "https://subtraz.top";
+}
+
+app.post("/api/gmail/connect/start", async (req, res) => {
+  try {
+    const user = await requireSubtrazAccount(req, res);
+
+    if (!user) return;
+
+    const platform =
+      req.body?.platform === "android"
+        ? "android"
+        : "web";
+
+    const returnOrigin = getSafeGmailReturnOrigin(req.body?.returnOrigin);
+
+    const stateToken = crypto.randomBytes(32).toString("hex");
+    const oauthState = `subtraz:${platform}:${stateToken}`;
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    await supabase
+      .from("gmail_connect_states")
+      .delete()
+      .eq("user_id", user.id)
+      .is("used_at", null);
+
+    const { error: stateError } = await supabase
+      .from("gmail_connect_states")
+      .insert({
+        state_hash: hashGmailConnectState(oauthState),
+        user_id: user.id,
+        platform,
+        return_origin: returnOrigin,
+        expires_at: expiresAt
+      });
+
+    if (stateError) {
+      console.error("Gmail connect state save error:", stateError.message);
+
+      return res.status(500).json({
+        ok: false,
+        error: stateError.message
+      });
+    }
+
+    const authUrl = oauth2Client.generateAuthUrl({
+      access_type: "offline",
+      prompt: "consent",
+      state: oauthState,
+      scope: [
+        "openid",
+        "email",
+        "profile",
+        "https://www.googleapis.com/auth/gmail.readonly"
+      ]
+    });
+
+    return res.json({
+      ok: true,
+      authUrl,
+      expiresAt
+    });
+  } catch (error) {
+    console.error("Secure Gmail connection start failed:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: error.message
+    });
+  }
+});
+
+async function requireLinkedExtension(req, res) {
+  const extensionToken = String(
+    req.get("X-Subtraz-Extension-Token") || ""
+  ).trim();
+
+  if (!extensionToken) {
+    res.status(401).json({
+      ok: false,
+      error: "Missing extension token"
+    });
+    return null;
+  }
+
+  const tokenHash = hashExtensionValue(extensionToken);
+
+  const { data: device, error } = await supabase
+    .from("extension_devices")
+    .select("id, user_id, device_name, created_at, last_seen_at, revoked_at")
+    .eq("token_hash", tokenHash)
+    .is("revoked_at", null)
+    .maybeSingle();
+
+  if (error || !device) {
+    res.status(401).json({
+      ok: false,
+      error: "Extension is not linked or was revoked"
+    });
+    return null;
+  }
+
+  await supabase
+    .from("extension_devices")
+    .update({
+      last_seen_at: new Date().toISOString()
+    })
+    .eq("id", device.id);
+
+  return device;
+}
+
+app.get("/api/extension/health", (req, res) => {
+  res.json({
+    ok: true,
+    route: "extension pairing ready"
+  });
+});
+
+app.post("/api/extension/pair/create", async (req, res) => {
+  try {
+    const user = await requireSubtrazAccount(req, res);
+
+    if (!user) return;
+
+    await supabase
+      .from("extension_pair_codes")
+      .delete()
+      .eq("user_id", user.id)
+      .is("used_at", null);
+
+    const code = makeExtensionPairCode();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    const { error } = await supabase
+      .from("extension_pair_codes")
+      .insert({
+        user_id: user.id,
+        code_hash: hashExtensionValue(code),
+        expires_at: expiresAt
+      });
+
+    if (error) {
+      console.error("Extension pairing create error:", error.message);
+
+      return res.status(500).json({
+        ok: false,
+        error: error.message
+      });
+    }
+
+    return res.json({
+      ok: true,
+      code,
+      expiresAt
+    });
+  } catch (error) {
+    console.error("Extension pairing create failed:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: error.message
+    });
+  }
+});
+
+app.post("/api/extension/pair/claim", async (req, res) => {
+  try {
+    const code = String(req.body?.code || "")
+      .replace(/\s+/g, "")
+      .trim();
+
+    const deviceName = String(
+      req.body?.deviceName || "Chrome Extension"
+    ).slice(0, 80);
+
+    if (!/^\d{6}$/.test(code)) {
+      return res.status(400).json({
+        ok: false,
+        error: "Enter the 6-digit pairing code"
+      });
+    }
+
+    const { data: pairing, error: findError } = await supabase
+      .from("extension_pair_codes")
+      .select("id, user_id, expires_at, used_at")
+      .eq("code_hash", hashExtensionValue(code))
+      .maybeSingle();
+
+    if (findError || !pairing) {
+      return res.status(400).json({
+        ok: false,
+        error: "Invalid pairing code"
+      });
+    }
+
+    if (pairing.used_at) {
+      return res.status(400).json({
+        ok: false,
+        error: "This pairing code has already been used"
+      });
+    }
+
+    if (new Date(pairing.expires_at).getTime() < Date.now()) {
+      return res.status(400).json({
+        ok: false,
+        error: "This pairing code has expired"
+      });
+    }
+
+    const usedAt = new Date().toISOString();
+
+    const { data: consumed, error: consumeError } = await supabase
+      .from("extension_pair_codes")
+      .update({
+        used_at: usedAt
+      })
+      .eq("id", pairing.id)
+      .is("used_at", null)
+      .select("id")
+      .maybeSingle();
+
+    if (consumeError || !consumed) {
+      return res.status(400).json({
+        ok: false,
+        error: "This pairing code was already claimed"
+      });
+    }
+
+    const rawExtensionToken = crypto.randomBytes(32).toString("hex");
+
+    const { data: device, error: deviceError } = await supabase
+      .from("extension_devices")
+      .insert({
+        user_id: pairing.user_id,
+        token_hash: hashExtensionValue(rawExtensionToken),
+        device_name: deviceName,
+        last_seen_at: usedAt
+      })
+      .select("id, device_name")
+      .single();
+
+    if (deviceError) {
+      console.error("Extension device save error:", deviceError.message);
+
+      return res.status(500).json({
+        ok: false,
+        error: deviceError.message
+      });
+    }
+
+    return res.json({
+      ok: true,
+      extensionToken: rawExtensionToken,
+      deviceId: device.id,
+      deviceName: device.device_name
+    });
+  } catch (error) {
+    console.error("Extension pairing claim failed:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: error.message
+    });
+  }
+});
+
+app.get("/api/extension/status", async (req, res) => {
+  try {
+    const device = await requireLinkedExtension(req, res);
+
+    if (!device) return;
+
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("id, email, plan")
+      .eq("id", device.user_id)
+      .maybeSingle();
+
+    if (error || !profile) {
+      return res.status(404).json({
+        ok: false,
+        error: "Linked Subtraz account was not found"
+      });
+    }
+
+    return res.json({
+      ok: true,
+      linked: true,
+      deviceName: device.device_name,
+      accountEmail: profile.email,
+      plan: profile.plan || "free"
+    });
+  } catch (error) {
+    console.error("Extension status failed:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: error.message
+    });
+  }
+});
+
+/* =========================================================
+   Subtraz Chrome Extension Receipt Detections
+   Linked extensions can check new Gmail receipt detections.
+   ========================================================= */
+
+app.get("/api/extension/detections/pending", async (req, res) => {
+  try {
+    const device = await requireLinkedExtension(req, res);
+
+    if (!device) return;
+
+    const { data: detections, error } = await supabase
+      .from("extension_receipt_detections")
+      .select(`
+        id,
+        service,
+        service_name,
+        category,
+        amount,
+        billing_date,
+        cycle,
+        source,
+        status,
+        created_at
+      `)
+      .eq("user_id", device.user_id)
+      .eq("status", "pending")
+      .is("notified_at", null)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    if (error) {
+      console.error("Extension pending detections error:", error.message);
+
+      return res.status(500).json({
+        ok: false,
+        error: error.message
+      });
+    }
+
+    if (!detections || !detections.length) {
+      return res.json({
+        ok: true,
+        detections: []
+      });
+    }
+
+    const detectionIds = detections.map(function (detection) {
+      return detection.id;
+    });
+
+    const notifiedAt = new Date().toISOString();
+
+    const { error: updateError } = await supabase
+      .from("extension_receipt_detections")
+      .update({
+        notified_at: notifiedAt
+      })
+      .in("id", detectionIds)
+      .eq("status", "pending")
+      .is("notified_at", null);
+
+    if (updateError) {
+      console.error("Extension detection notify mark error:", updateError.message);
+
+      return res.status(500).json({
+        ok: false,
+        error: updateError.message
+      });
+    }
+
+    return res.json({
+      ok: true,
+      detections
+    });
+  } catch (error) {
+    console.error("Extension pending detections failed:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: error.message
+    });
+  }
+});
+
+app.post("/api/extension/detections/:detectionId/open", async (req, res) => {
+  try {
+    const device = await requireLinkedExtension(req, res);
+
+    if (!device) return;
+
+    const detectionId = String(req.params.detectionId || "").trim();
+
+    const { data: detection, error } = await supabase
+      .from("extension_receipt_detections")
+      .update({
+        status: "opened",
+        opened_at: new Date().toISOString()
+      })
+      .eq("id", detectionId)
+      .eq("user_id", device.user_id)
+      .eq("status", "pending")
+      .select(`
+        id,
+        service,
+        service_name,
+        category,
+        amount,
+        billing_date,
+        cycle,
+        source,
+        status
+      `)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Extension open detection error:", error.message);
+
+      return res.status(500).json({
+        ok: false,
+        error: error.message
+      });
+    }
+
+    if (!detection) {
+      return res.status(404).json({
+        ok: false,
+        error: "Receipt detection was not found or has already been handled."
+      });
+    }
+
+    return res.json({
+      ok: true,
+      detection
+    });
+  } catch (error) {
+    console.error("Extension open detection failed:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: error.message
+    });
+  }
+});
+
+app.post("/api/extension/detections/:detectionId/dismiss", async (req, res) => {
+  try {
+    const device = await requireLinkedExtension(req, res);
+
+    if (!device) return;
+
+    const detectionId = String(req.params.detectionId || "").trim();
+
+    const { data: detection, error } = await supabase
+      .from("extension_receipt_detections")
+      .update({
+        status: "dismissed",
+        dismissed_at: new Date().toISOString()
+      })
+      .eq("id", detectionId)
+      .eq("user_id", device.user_id)
+      .eq("status", "pending")
+      .select("id, status")
+      .maybeSingle();
+
+    if (error) {
+      console.error("Extension dismiss detection error:", error.message);
+
+      return res.status(500).json({
+        ok: false,
+        error: error.message
+      });
+    }
+
+    if (!detection) {
+      return res.status(404).json({
+        ok: false,
+        error: "Receipt detection was not found or has already been handled."
+      });
+    }
+
+    return res.json({
+      ok: true,
+      dismissed: true
+    });
+  } catch (error) {
+    console.error("Extension dismiss detection failed:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: error.message
+    });
+  }
+});
+
+/* =========================================================
+   Extension Gmail Scan Test
+   Reads Gmail for the linked Subtraz account and saves
+   pending receipt detections for the Chrome extension.
+   ========================================================= */
+
+app.post("/api/extension/detections/scan-now", async (req, res) => {
+  try {
+    const device = await requireLinkedExtension(req, res);
+
+    if (!device) return;
+
+    const { data: gmailConnection, error: connectionError } = await supabase
+      .from("gmail_tokens")
+      .select("tokens, gmail_email, updated_at")
+      .eq("subtraz_user_id", device.user_id)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (connectionError) {
+      console.error("Extension Gmail connection lookup error:", connectionError.message);
+
+      return res.status(500).json({
+        ok: false,
+        error: connectionError.message
+      });
+    }
+
+    if (!gmailConnection || !gmailConnection.tokens) {
+      return res.status(400).json({
+        ok: false,
+        error: "Connect Gmail in Subtraz first."
+      });
+    }
+
+    oauth2Client.setCredentials(gmailConnection.tokens);
+
+    const gmail = google.gmail({
+      version: "v1",
+      auth: oauth2Client
+    });
+
+    const messagesResponse = await gmail.users.messages.list({
+      userId: "me",
+      q: buildGmailQuery(),
+      maxResults: 20
+    });
+
+    const messages = messagesResponse.data.messages || [];
+
+    if (!messages.length) {
+      return res.json({
+        ok: true,
+        found: 0,
+        created: 0
+      });
+    }
+
+    const fullMessages = await Promise.all(
+      messages.slice(0, 10).map(function (message) {
+        return gmail.users.messages.get({
+          userId: "me",
+          id: message.id,
+          format: "full"
+        });
+      })
+    );
+
+    const parsedDetections = parseEmailsForSubscriptions(
+      fullMessages.map(function (response) {
+        return response.data;
+      })
+    );
+
+    const detections = deduplicateByService(parsedDetections);
+
+    let createdCount = 0;
+
+    for (const detection of detections) {
+      if (!detection.gmailMessageId) continue;
+
+      const { data: existingDetection, error: existingError } = await supabase
+        .from("extension_receipt_detections")
+        .select("id")
+        .eq("user_id", device.user_id)
+        .eq("gmail_message_id", detection.gmailMessageId)
+        .maybeSingle();
+
+      if (existingError) {
+        throw existingError;
+      }
+
+      if (existingDetection) {
+        continue;
+      }
+
+      const { error: insertError } = await supabase
+        .from("extension_receipt_detections")
+        .insert({
+          user_id: device.user_id,
+          gmail_message_id: detection.gmailMessageId,
+          service: detection.service,
+          service_name: detection.serviceName,
+          category: detection.category,
+          amount: detection.amount,
+          billing_date: detection.billingDate,
+          cycle: detection.cycle || "monthly",
+          source: "gmail",
+          status: "pending"
+        });
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      createdCount += 1;
+    }
+
+    return res.json({
+      ok: true,
+      gmailEmail: gmailConnection.gmail_email || "",
+      found: detections.length,
+      created: createdCount
+    });
+  } catch (error) {
+    console.error("Extension Gmail scan failed:", error.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: error.message
+    });
+  }
+});
 
 const PORT = process.env.PORT || 3001;
 
@@ -725,24 +1567,31 @@ app.listen(PORT, () => {
   console.log(`Google Client Secret loaded: ${!!GOOGLE_CLIENT_SECRET}`);
 });
 
-// Fast polling: scan every 15 seconds for near-instant detection
-// (Gmail Pub/Sub webhook below handles true real-time; this is a safety fallback)
-setInterval(async function() {
-  console.log('Scanning gmail for all users...');
-  try {
-    const { data: users } = await supabase
-      .from('gmail_tokens')
-      .select('user_id');
+// Fast polling scanner.
+// Keep this OFF while testing locally so local and Railway do not send duplicate alerts.
+if (process.env.ENABLE_GMAIL_SCANNER === "true") {
+  setInterval(async function () {
+    console.log("Scanning Gmail for all users...");
 
-    if (!users || !users.length) return;
+    try {
+      const { data: users } = await supabase
+        .from("gmail_tokens")
+        .select("user_id");
 
-    for (const user of users) {
-      await scanAndNotifyUser(user.user_id);
+      if (!users || !users.length) return;
+
+      for (const user of users) {
+        await scanAndNotifyUser(user.user_id);
+      }
+    } catch (err) {
+      console.error("Scheduled scan error:", err);
     }
-  } catch (err) {
-    console.error('Scheduled scan error:', err);
-  }
-}, 15000); // 15 seconds
+  }, 15000);
+
+  console.log("Gmail scheduled scanner enabled.");
+} else {
+  console.log("Gmail scheduled scanner disabled.");
+}
 
 // Gmail Pub/Sub webhook
 app.post('/api/gmail/webhook', async (req, res) => {
