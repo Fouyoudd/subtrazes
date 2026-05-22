@@ -7712,12 +7712,78 @@ function renderSimple() {
   if (typeof renderNotificationSettingsPanel === "function") renderNotificationSettingsPanel();
 }
 
-function renderReceiptAutoFillPage() {
+ function renderReceiptAutoFillPage() {
   const view =
     document.getElementById("receiptAutoFill") ||
     document.getElementById("view-receiptAutoFill");
 
   if (!view) return;
+
+  const onPro =
+    typeof isPro === "function"
+      ? isPro()
+      : typeof currentPlan !== "undefined" && String(currentPlan).toLowerCase() === "pro";
+
+  if (!onPro) {
+    view.innerHTML = `
+      <div class="pagePad receipt-page-wrap">
+        <div class="pageHead">
+          <div>
+            <h2>Receipt Auto-Fill</h2>
+            <p>This feature is available for Pro users only.</p>
+          </div>
+        </div>
+
+        <div class="panel" style="
+          padding:28px;
+          border-radius:26px;
+          background:linear-gradient(180deg,#ffffff,#f0fdf4);
+          border:1px solid #bbf7d0;
+          box-shadow:0 18px 50px rgba(15,23,42,.08);
+        ">
+          <div style="
+            width:60px;
+            height:60px;
+            border-radius:20px;
+            display:grid;
+            place-items:center;
+            background:#dcfce7;
+            color:#16a34a;
+            font-size:30px;
+            margin-bottom:16px;
+          ">🔒</div>
+
+          <h3 style="margin:0 0 8px;font-size:26px;letter-spacing:-.04em;color:#0f172a;">
+            Pro access required
+          </h3>
+
+          <p style="margin:0;color:#64748b;line-height:1.65;font-size:14px;max-width:650px;">
+            Receipt Auto-Fill connects Gmail, detects subscription receipts, and fills subscription details for you. Upgrade to Pro to use this feature.
+          </p>
+
+          <div style="
+            margin-top:18px;
+            padding:15px 16px;
+            border-radius:16px;
+            background:#f8fafc;
+            border:1px solid #e2e8f0;
+            color:#334155;
+            font-size:13px;
+            line-height:1.6;
+          ">
+            <strong style="color:#0f172a;">Pro includes:</strong><br>
+            Gmail receipt detection, receipt-based auto-fill, renewal reminders, project-wise analytics, spending insights, and Pro-only tracking tools.
+          </div>
+
+          <button class="btn btn-primary" data-upgrade style="margin-top:18px;">
+            Upgrade to Pro
+          </button>
+        </div>
+      </div>
+    `;
+
+    return;
+  }
 
   const savedUserId = localStorage.getItem("subtracks-user-id") || "guest";
   const gmailConnected = savedUserId && savedUserId !== "guest";
@@ -11365,7 +11431,7 @@ if (
 (function () {
   "use strict";
 
-  const LEMON_CHECKOUT_URL = "https://subtracks.lemonsqueezy.com/checkout/buy/acd9821d-8396-4a45-bd38-75cef920927b";
+  const LEMON_CHECKOUT_URL = "https://subtracks.lemonsqueezy.com/checkout/buy/ed1881c7-1913-412d-800f-39bc16e4d2f7";
 
   function getSupabaseClient() {
     if (window.supabaseClient) return window.supabaseClient;
@@ -11806,6 +11872,217 @@ if (
     });
   } else {
     setTimeout(checkPremiumSuccessFromReturn, 600);
+  }
+})();
+</script>
+
+<script>
+/* ===== Receipt Auto-Fill Pro-only guard ===== */
+(function () {
+  "use strict";
+
+  function hasProAccess() {
+    if (typeof isPro === "function") return isPro();
+    if (typeof currentPlan !== "undefined") return currentPlan === "pro";
+    return false;
+  }
+
+  function showProWarning() {
+    if (typeof pop === "function") {
+      pop("Receipt Auto-Fill is a Pro feature. Upgrade to Pro to connect Gmail.");
+    } else {
+      alert("Receipt Auto-Fill is a Pro feature. Upgrade to Pro to connect Gmail.");
+    }
+  }
+
+  document.addEventListener("click", function (event) {
+    const btn = event.target.closest("button, a, [role='button']");
+    if (!btn) return;
+
+    const text = [
+      btn.textContent || "",
+      btn.id || "",
+      btn.name || "",
+      btn.getAttribute("aria-label") || "",
+      btn.getAttribute("href") || ""
+    ].join(" ").toLowerCase();
+
+    const isGmailConnect =
+      text.includes("connect gmail") ||
+      text.includes("continue to gmail") ||
+      text.includes("gmail receipt");
+
+    if (!isGmailConnect) return;
+
+    if (!hasProAccess()) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      showProWarning();
+
+      if (typeof goRoute === "function") {
+        goRoute("/app/billing");
+      } else {
+        location.hash = "#/app/billing";
+      }
+    }
+  }, true);
+})();
+</script>
+
+<script>
+/* ===== EARLY LOCK: Receipt Auto-Fill Pro-only ===== */
+(function () {
+  "use strict";
+
+  function safeCurrentPlan() {
+    try {
+      if (typeof isPro === "function" && isPro()) return "pro";
+    } catch (_) {}
+
+    try {
+      if (typeof currentPlan !== "undefined") return String(currentPlan || "free").toLowerCase();
+    } catch (_) {}
+
+    try {
+      if (window.currentPlan) return String(window.currentPlan || "free").toLowerCase();
+    } catch (_) {}
+
+    try {
+      const savedPlan =
+        localStorage.getItem("subtraz_plan") ||
+        localStorage.getItem("currentPlan") ||
+        localStorage.getItem("subtracks-plan");
+
+      if (savedPlan) return String(savedPlan).toLowerCase();
+    } catch (_) {}
+
+    return "free";
+  }
+
+  function hasProAccess() {
+    return safeCurrentPlan() === "pro";
+  }
+
+  function showProOnlyMessage() {
+    if (typeof pop === "function") {
+      pop("Receipt Auto-Fill is a Pro feature. Upgrade to Pro to connect Gmail.");
+    } else {
+      alert("Receipt Auto-Fill is a Pro feature. Upgrade to Pro to connect Gmail.");
+    }
+  }
+
+  function goToBilling() {
+    if (typeof goRoute === "function") {
+      goRoute("/app/billing");
+    } else {
+      location.hash = "#/app/billing";
+    }
+  }
+
+  function looksLikeGmailConnect(el) {
+    if (!el) return false;
+
+    const text = [
+      el.textContent || "",
+      el.id || "",
+      el.name || "",
+      el.getAttribute("aria-label") || "",
+      el.getAttribute("title") || "",
+      el.getAttribute("href") || ""
+    ].join(" ").toLowerCase();
+
+    return (
+      text.includes("/auth/google") ||
+      text.includes("connect gmail") ||
+      text.includes("continue to gmail") ||
+      text.includes("gmail receipt detection") ||
+      text.includes("gmail receipt") ||
+      text.includes("receipt auto-fill") && text.includes("gmail")
+    );
+  }
+
+  function isInsideReceiptAutoFillArea(el) {
+    const pageText = (document.body && document.body.textContent || "").toLowerCase();
+
+    return (
+      location.hash.toLowerCase().includes("receipt") ||
+      pageText.includes("receipt auto-fill") ||
+      !!el.closest("#receiptAutoFill, #view-receiptAutoFill, .receipt-page-wrap")
+    );
+  }
+
+  function lockVisibleGmailButtons() {
+    if (hasProAccess()) return;
+
+    document.querySelectorAll("a, button, [role='button']").forEach(function (el) {
+      if (!looksLikeGmailConnect(el)) return;
+      if (!isInsideReceiptAutoFillArea(el)) return;
+
+      el.setAttribute("data-pro-locked", "true");
+      el.setAttribute("aria-disabled", "true");
+
+      if (el.tagName === "A") {
+        el.dataset.originalHref = el.getAttribute("href") || "";
+        el.removeAttribute("href");
+      }
+
+      if (el.tagName === "BUTTON") {
+        el.disabled = false;
+      }
+
+      el.textContent = "Upgrade to Pro";
+      el.style.pointerEvents = "auto";
+      el.style.cursor = "pointer";
+      el.style.background = "#16a34a";
+      el.style.color = "#ffffff";
+      el.style.border = "0";
+      el.style.opacity = "1";
+    });
+  }
+
+  document.addEventListener("click", function (event) {
+    const el = event.target.closest("a, button, [role='button']");
+    if (!el) return;
+
+    if (!looksLikeGmailConnect(el)) return;
+    if (!isInsideReceiptAutoFillArea(el)) return;
+
+    if (!hasProAccess()) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      showProOnlyMessage();
+      goToBilling();
+      return false;
+    }
+  }, true);
+
+  function bootLock() {
+    lockVisibleGmailButtons();
+
+    setInterval(lockVisibleGmailButtons, 500);
+
+    window.addEventListener("hashchange", function () {
+      setTimeout(lockVisibleGmailButtons, 50);
+      setTimeout(lockVisibleGmailButtons, 300);
+      setTimeout(lockVisibleGmailButtons, 900);
+    });
+
+    if (document.body) {
+      const observer = new MutationObserver(lockVisibleGmailButtons);
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootLock);
+  } else {
+    bootLock();
   }
 })();
 </script>
