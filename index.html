@@ -11850,7 +11850,7 @@ if (
       const result = await getFreshProfilePlan();
 
       if (result.ok && result.plan === "pro") {
-        showPremiumSuccessPopup(params.orderId, params.email);
+        showPremiumSuccessPopup(params.orderId, result.profile?.email || "");
         return;
       }
 
