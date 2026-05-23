@@ -1,5 +1,5 @@
-const BACKEND_URL = "http://localhost:3001";
-const SUBTRAZ_PAGE_URL = "http://127.0.0.1:5500/index.html";
+const BACKEND_URL = "https://subtracks-production.up.railway.app";
+const SUBTRAZ_PAGE_URL = "https://subtraz.top/index.html";
 const CHECK_ALARM_NAME = "subtraz-check-gmail";
 const NOTIFICATION_PREFIX = "subtraz-receipt-";
 

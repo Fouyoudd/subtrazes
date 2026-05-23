@@ -9,9 +9,8 @@
     "notifications"
   ],
   "host_permissions": [
-    "https://subtracks-production.up.railway.app/*",
-    "http://localhost:3001/*"
-  ],
+  "https://subtracks-production.up.railway.app/*"
+],
   "action": {
     "default_title": "Subtraz Desktop Alerts",
     "default_popup": "popup.html"

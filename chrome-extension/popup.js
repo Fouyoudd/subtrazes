@@ -1,5 +1,5 @@
-const BACKEND_URL = "http://localhost:3001";
-const RECEIPT_PAGE_URL = "http://127.0.0.1:5500/index.html#/app/receiptAutoFill";
+const BACKEND_URL = "https://subtracks-production.up.railway.app";
+const RECEIPT_PAGE_URL = "https://subtraz.top/index.html#/app/receiptAutoFill";
 
 const unlinkedView = document.getElementById("unlinkedView");
 const linkedView = document.getElementById("linkedView");
@@ -231,7 +231,7 @@ async function openCurrentDetection() {
 
     chrome.tabs.create({
       url:
-        "http://127.0.0.1:5500/index.html?" +
+        "https://subtraz.top/index.html?" +
         params.toString() +
         "#/app/dashboard"
     });

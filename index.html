@@ -9316,7 +9316,7 @@ function bindSubtrazAuthControls() {
           }
 
           const response = await fetch(
-            "http://localhost:3001/api/gmail/connect/start",
+            SUBTRAZ_BACKEND_ORIGIN + "/api/gmail/connect/start",
             {
               method: "POST",
               headers: {
@@ -11977,21 +11977,41 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   function renderExtensionCard() {
-    if (!isDesktopBrowser()) return;
-    if (!receiptPageIsActive()) return;
+    const existingCard = document.getElementById("subtrazDesktopExtensionCard");
+
+    if (!isDesktopBrowser() || !receiptPageIsActive()) {
+      if (existingCard) existingCard.remove();
+      return;
+    }
 
     const receiptView = document.getElementById("receiptAutoFill");
-    if (!receiptView) return;
+
+    if (!receiptView) {
+      if (existingCard) existingCard.remove();
+      return;
+    }
 
     const connectCard = receiptView.querySelector(".receipt-connect-card");
 
     /*
       Free users do not have the Gmail connect card.
-      That keeps this section off the locked Free page.
+      Keep extension setup hidden on the locked Free page.
     */
-    if (!connectCard) return;
+    if (!connectCard) {
+      if (existingCard) existingCard.remove();
+      return;
+    }
 
-    const existingCard = document.getElementById("subtrazDesktopExtensionCard");
+    /*
+      Show desktop extension setup only after Gmail is connected.
+    */
+    const gmailConnected =
+      localStorage.getItem("subtraz_gmail_connected") === "true";
+
+    if (!gmailConnected) {
+      if (existingCard) existingCard.remove();
+      return;
+    }
 
     if (existingCard) {
       existingCard.outerHTML = getExtensionCardHTML();
@@ -12002,6 +12022,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     connectCard.insertAdjacentHTML("afterend", getExtensionCardHTML());
     bindExtensionCardButtons();
   }
+
 
   async function createExtensionPairCode() {
     if (pairBusy) return;
@@ -12023,7 +12044,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
 
       const response = await fetch(
-        "http://localhost:3001/api/extension/pair/create",
+        SUBTRAZ_BACKEND_ORIGIN + "/api/extension/pair/create",
         {
           method: "POST",
           headers: {
