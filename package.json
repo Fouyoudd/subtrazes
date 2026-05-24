@@ -23,6 +23,7 @@
     "firebase-admin": "^13.10.0",
     "googleapis": "^118.0.0",
     "node-schedule": "^2.1.1",
+    "resend": "^6.12.3",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
