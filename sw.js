@@ -1,42 +1,88 @@
-self.addEventListener('install', function (e) {
+self.addEventListener("install", function () {
   self.skipWaiting();
 });
 
-self.addEventListener('activate', function (e) {
-  e.waitUntil(clients.claim());
+self.addEventListener("activate", function (event) {
+  event.waitUntil(clients.claim());
 });
 
-const APP_URL = 'https://subtraz.top/index.html';
+const LIVE_APP_URL = "https://subtraz.top/index.html";
 
-self.addEventListener('push', function (e) {
+const ALLOWED_APP_ORIGINS = new Set([
+  "https://subtraz.top",
+  "https://www.subtraz.top",
+  "http://127.0.0.1:5500",
+  "http://localhost:5500"
+]);
+
+function safeAppUrl(value) {
+  try {
+    const parsed = new URL(String(value || ""));
+
+    if (!ALLOWED_APP_ORIGINS.has(parsed.origin)) {
+      return "";
+    }
+
+    return parsed.href;
+  } catch (_) {
+    return "";
+  }
+}
+
+function buildReceiptPushUrl(detection) {
+  const params = new URLSearchParams({
+    subscriptions: JSON.stringify([detection]),
+    auto: "1",
+    source: "gmail"
+  });
+
+  return `${LIVE_APP_URL}?${params.toString()}#/app/notifications`;
+}
+
+function buildReminderPushUrl(subscriptionId) {
+  return `${LIVE_APP_URL}?reminder_sub=${encodeURIComponent(subscriptionId)}#/app/subscriptions`;
+}
+
+self.addEventListener("push", function (event) {
   let data = {};
 
   try {
-    data = e.data ? e.data.json() : {};
-  } catch (err) {
+    data = event.data ? event.data.json() : {};
+  } catch (_) {
     data = {
-      title: 'Subtraz',
-      body: e.data ? e.data.text() : 'New notification'
+      title: "Subtraz",
+      body: event.data ? event.data.text() : "New alert"
     };
   }
 
-  let urlToOpen = APP_URL;
+  let urlToOpen =
+    safeAppUrl(data.url) ||
+    safeAppUrl(data.reminderUrl) ||
+    "";
 
-  if (data.detection) {
-    const params = new URLSearchParams({
-      subscriptions: JSON.stringify([data.detection]),
-      auto: '1',
-      source: 'gmail'
-    });
-
-    urlToOpen = `${APP_URL}?${params.toString()}#/app/notifications`;
+  if (!urlToOpen && data.reminder && data.reminder.subscriptionId) {
+    urlToOpen = buildReminderPushUrl(data.reminder.subscriptionId);
   }
 
-  e.waitUntil(
-    self.registration.showNotification(data.title || 'Subtraz', {
-      body: data.body || 'Tap to open.',
-      icon: 'https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png',
-      badge: 'https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png',
+  if (!urlToOpen && data.subscriptionId) {
+    urlToOpen = buildReminderPushUrl(data.subscriptionId);
+  }
+
+  if (!urlToOpen && data.detection) {
+    urlToOpen = buildReceiptPushUrl(data.detection);
+  }
+
+  if (!urlToOpen) {
+    urlToOpen = LIVE_APP_URL;
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Subtraz", {
+      body: data.body || "Tap to open Subtraz.",
+      icon: "https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png",
+      badge: "https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png",
+      tag: data.tag || "subtraz-alert",
+      renotify: true,
       data: {
         url: urlToOpen
       }
@@ -44,26 +90,27 @@ self.addEventListener('push', function (e) {
   );
 });
 
-self.addEventListener('notificationclick', function (e) {
-  e.notification.close();
+self.addEventListener("notificationclick", function (event) {
+  event.notification.close();
 
-  const url = e.notification.data && e.notification.data.url
-    ? e.notification.data.url
-    : APP_URL;
+  const urlToOpen =
+    safeAppUrl(event.notification.data?.url) ||
+    LIVE_APP_URL;
 
-  e.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
-      for (const client of list) {
-        if (client.url.includes('subtraz.top') && 'focus' in client) {
-          return client.focus().then(function () {
-            if ('navigate' in client) {
-              return client.navigate(url);
-            }
-          });
-        }
+  event.waitUntil(
+    clients.matchAll({
+      type: "window",
+      includeUncontrolled: true
+    }).then(function (windowClients) {
+      const matchingTab = windowClients.find(function (client) {
+        return client.url === urlToOpen && "focus" in client;
+      });
+
+      if (matchingTab) {
+        return matchingTab.focus();
       }
 
-      return clients.openWindow(url);
+      return clients.openWindow(urlToOpen);
     })
   );
 });
