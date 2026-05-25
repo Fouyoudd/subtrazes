@@ -13860,19 +13860,7 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
     <span id="statNextDate">No upcoming renewals</span>
   </div>
 
-</div><div class="panel"><div class="panelHead"><div><h3>Add subscription manually</h3><p>Manual tracking is the safest default. Gmail Receipt Auto-Fill is optional.</p></div><div class="manualActionPair"><button class="btn primary" data-open>Add subscription manually</button><button class="btn outline" data-view="receiptAutoFill">Connect Gmail for Receipt Auto-Fill</button></div></div></div><div class="panel empty"><div><div class="stat">
-    <span class="statGlowIcon" aria-hidden="true">
-      <svg viewBox="0 0 24 24">
-        <path d="M8 4.5h8"></path>
-        <path d="M8 19.5h8"></path>
-        <path d="M9 4.5c0 3 1.2 4.4 3 6 1.8-1.6 3-3 3-6"></path>
-        <path d="M9 19.5c0-3 1.2-4.4 3-6 1.8 1.6 3 3 3 6"></path>
-      </svg>
-    </span>
-    <p>Trial subs</p>
-    <strong id="statTrials">0</strong>
-    <span>watch closely</span>
-  </div><h3>Upcoming renewals</h3><p>Add the services you pay for and Subtraz will track renewals and spending.</p><div class="list" id="dashUpcoming"></div></div></div><div class="two"><div class="panel"><div class="panelHead"><div><h3>Category breakdown</h3><p>Monthly spend by category</p></div></div><div id="dashPie"></div></div><div class="panel"><div class="panelHead"><div><h3>Project spend</h3><p>Monthly spend by project</p></div></div><div id="dashBars"></div></div></div></section></div>
+</div><div class="panel"><div class="panelHead"><div><h3>Add subscription manually</h3><p>Manual tracking is the safest default. Gmail Receipt Auto-Fill is optional.</p></div><div class="manualActionPair"><button class="btn primary" data-open>Add subscription manually</button><button class="btn outline" data-view="receiptAutoFill">Connect Gmail for Receipt Auto-Fill</button></div></div></div><div class="panel empty"><div><h3>Upcoming renewals</h3><p>Add the services you pay for and Subtraz will track renewals and spending.</p><div class="list" id="dashUpcoming"></div></div></div><div class="two"><div class="panel"><div class="panelHead"><div><h3>Category breakdown</h3><p>Monthly spend by category</p></div></div><div id="dashPie"></div></div><div class="panel"><div class="panelHead"><div><h3>Project spend</h3><p>Monthly spend by project</p></div></div><div id="dashBars"></div></div></div></section></div>
 <div id="subscriptions" class="view"><div class="pagePad subtraz-subscriptions-page"><div class="desktopSubsLayout"><div class="pageHead"><div><h2>My Subscriptions</h2><p>Manage all subscriptions in one place.</p></div><button class="btn primary" data-open>+ Add subscription</button></div><div class="panel"><div class="filters subs-filters"><select class="input" id="filterStatus"><option value="All">All statuses</option><option value="Active">Active</option><option value="Trial">Trial</option><option value="Cancelled">Cancelled</option></select><select class="input" id="filterProject"><option value="All">All projects</option></select></div><div class="tableWrap"><table class="subs-clean-table"><thead><tr><th>Service</th><th>Project</th><th>Amount</th><th>Next billing</th><th>Status</th><th class="subs-actions-head">Actions</th></tr></thead><tbody id="subsTable"></tbody></table></div></div></div><div id="mobileSubsLayout" class="mobileSubsLayout" aria-label="Mobile subscriptions overview"></div></div></div>
 <div id="subDetail" class="view"><div class="pagePad" id="subDetailWrap"></div></div>
 <div id="analytics" class="view"><div class="pagePad subtraz-analytics-page"><div class="desktopAnalyticsLayout"><div class="pageHead"><div><h2>Analytics</h2><p>Pie chart and project graph based on your subscription data.</p></div><span class="btn outline">Live from saved data</span></div><div class="analyticsTop"><div class="panel"><h3>Highest category</h3><p>Your biggest spending group.</p><div class="big" id="topCategory">-</div></div><div class="panel"><h3>Highest project</h3><p>The project costing you the most.</p><div class="big" id="topProject">-</div></div><div class="panel"><h3>Projects used</h3><p>Free plan allows 6 projects. Pro is unlimited.</p><div class="big" id="projectCount">0/6</div></div></div><div class="two"><div class="panel"><div class="panelHead"><div><h3>Category pie chart</h3><p>Based on active paid subscriptions</p></div></div><div id="analyticsPie"></div></div><div class="panel"><div class="panelHead"><div><h3>Trial subscriptions</h3><p>Trial subs by project</p></div></div><div id="analyticsTrialPie"></div></div></div><div class="two"><div class="panel"><div class="panelHead"><div><h3>Project graph</h3><p>Spend by project</p></div></div><div id="analyticsBars"></div></div><div class="panel"><div class="panelHead"><div><h3>Active vs Trial</h3><p>Status breakdown</p></div></div><div id="analyticsStatusPie"></div></div></div></div><div id="mobileAnalyticsLayout" class="mobileAnalyticsLayout" aria-label="Mobile analytics overview"></div></div></div>
@@ -14037,6 +14025,108 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div id="subtrazLiveLoader" class="subtraz-live-loader" hidden aria-live="polite" aria-busy="true">
+  <div class="subtraz-live-loader-card">
+    <span class="subtraz-live-spinner" aria-hidden="true"></span>
+    <strong id="subtrazLiveLoaderTitle">Loading Subtraz...</strong>
+    <p id="subtrazLiveLoaderText">Getting your subscriptions ready.</p>
+  </div>
+</div>
+
+<style>
+#subtrazLiveLoader[hidden] {
+  display: none !important;
+}
+
+.subtraz-live-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(3, 24, 18, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.subtraz-live-loader-card {
+  width: min(340px, calc(100vw - 36px));
+  padding: 28px 22px;
+  border-radius: 24px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #dcfce7;
+  box-shadow: 0 24px 65px rgba(0, 0, 0, 0.22);
+}
+
+.subtraz-live-spinner {
+  display: block;
+  width: 42px;
+  height: 42px;
+  margin: 0 auto 18px;
+  border-radius: 999px;
+  border: 4px solid #dcfce7;
+  border-top-color: #16a34a;
+  animation: subtrazSpin .8s linear infinite;
+}
+
+.subtraz-live-loader-card strong {
+  display: block;
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.subtraz-live-loader-card p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@keyframes subtrazSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
+
+<script>
+let subtrazLoadingJobs = 0;
+
+function showSubtrazLoader(title, message) {
+  const loader = document.getElementById("subtrazLiveLoader");
+  const titleEl = document.getElementById("subtrazLiveLoaderTitle");
+  const messageEl = document.getElementById("subtrazLiveLoaderText");
+
+  subtrazLoadingJobs += 1;
+
+  if (titleEl && title) {
+    titleEl.textContent = title;
+  }
+
+  if (messageEl && message) {
+    messageEl.textContent = message;
+  }
+
+  if (loader) {
+    loader.hidden = false;
+  }
+}
+
+function hideSubtrazLoader() {
+  const loader = document.getElementById("subtrazLiveLoader");
+
+  subtrazLoadingJobs = Math.max(0, subtrazLoadingJobs - 1);
+
+  if (loader && subtrazLoadingJobs === 0) {
+    loader.hidden = true;
+  }
+}
+</script>
+
 <script defer src="https://cloud.umami.is/script.js" data-website-id="c0b80ed0-6aca-4de0-bfd4-6e6b3ef70846"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -20120,6 +20210,11 @@ function bindSubtrazAuthControls() {
       const originalText = gmailBtn.textContent;
       gmailBtn.textContent = "Connecting Gmail...";
 
+      showSubtrazLoader(
+        "Connecting Gmail...",
+        "Opening the Gmail permission page."
+      );
+
       (async function startSecureGmailConnection() {
         try {
           if (!supabaseClient) {
@@ -20159,6 +20254,7 @@ function bindSubtrazAuthControls() {
 
           window.location.href = result.authUrl;
         } catch (error) {
+          hideSubtrazLoader();
           gmailBtn.dataset.connecting = "false";
           gmailBtn.textContent = originalText;
           pop(error.message || "Could not connect Gmail.");
@@ -21198,10 +21294,34 @@ document.addEventListener('DOMContentLoaded', async function() {
 (function subtracksPushAutofillFix() {
   const STORAGE_KEY = "subtracks-pending-push-autofill";
 
-  function addOneMonthFromToday() {
-    const d = new Date();
-    d.setMonth(d.getMonth() + 1);
-    return d.toISOString().slice(0, 10);
+  function addNextBillingDateFromToday(cycle) {
+    const today = new Date();
+
+    const sourceYear = today.getFullYear();
+    const sourceMonth = today.getMonth();
+    const sourceDay = today.getDate();
+
+    const targetYear =
+      String(cycle || "monthly").toLowerCase() === "annual"
+        ? sourceYear + 1
+        : sourceYear;
+
+    const targetMonth =
+      String(cycle || "monthly").toLowerCase() === "annual"
+        ? sourceMonth
+        : sourceMonth + 1;
+
+    const finalDayOfTargetMonth =
+      new Date(targetYear, targetMonth + 1, 0).getDate();
+
+    const targetDay = Math.min(sourceDay, finalDayOfTargetMonth);
+    const nextDate = new Date(targetYear, targetMonth, targetDay);
+
+    const year = nextDate.getFullYear();
+    const month = String(nextDate.getMonth() + 1).padStart(2, "0");
+    const day = String(nextDate.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
   }
 
   function receiptDateForInput(value) {
@@ -21226,6 +21346,21 @@ document.addEventListener('DOMContentLoaded', async function() {
     const day = String(parsed.getDate()).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
+  }
+
+  function validFutureBillingDate(value) {
+    const inputDate = receiptDateForInput(value);
+
+    if (!inputDate) {
+      return "";
+    }
+
+    const billingDate = new Date(inputDate + "T00:00:00");
+    const today = new Date();
+
+    today.setHours(0, 0, 0, 0);
+
+    return billingDate > today ? inputDate : "";
   }
 
   function wholeNumberAmount(value) {
@@ -21286,7 +21421,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     return {
       name: sub.serviceName || sub.name || "",
       amount: wholeNumberAmount(sub.amount || sub.price || ""),
-      date: receiptDateForInput(sub.billingDate || sub.nextBilling) || addOneMonthFromToday(),
+      date:
+        validFutureBillingDate(sub.billingDate || sub.nextBilling) ||
+        addNextBillingDateFromToday(sub.cycle),
       project: sub.project || "Personal",
       status: sub.status || "Active"
     };
@@ -21398,8 +21535,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       sessionStorage.removeItem(STORAGE_KEY);
 
-      const cleanUrl = window.location.origin + window.location.pathname + "#/app/dashboard";
+            const cleanUrl = window.location.origin + window.location.pathname + "#/app/dashboard";
       history.replaceState(null, "", cleanUrl);
+
+      hideSubtrazLoader();
     }, 500);
 
     return true;
@@ -21430,6 +21569,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     const foundPushData = savePendingFromUrl();
 
     if (foundPushData) {
+      showSubtrazLoader(
+        "Loading receipt details...",
+        "Preparing your subscription form."
+      );
+
       setTimeout(function () {
         tryRunAutofill(20);
       }, 700);
@@ -22690,6 +22834,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     if (!receiptToken) return;
 
+    showSubtrazLoader(
+      "Opening receipt details...",
+      "Preparing your subscription form."
+    );
+
     const backendOrigin =
       typeof SUBTRAZ_BACKEND_ORIGIN !== "undefined"
         ? SUBTRAZ_BACKEND_ORIGIN
@@ -22729,6 +22878,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.location.pathname + "?" + nextParams.toString() + nextHash
       );
     } catch (error) {
+      hideSubtrazLoader();
       console.error("Secure receipt auto-fill link failed:", error);
 
       if (typeof pop === "function") {

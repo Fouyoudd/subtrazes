@@ -567,8 +567,12 @@ function parseEmailsForSubscriptions(messages) {
       if (!service) return null;
 
       const amount = extractAmount(body);
-      const billingDate = extractBillingDate(body);
       const cycle = extractCycle(body);
+      const purchaseDate = extractPurchaseDate(body) || date;
+
+      const billingDate =
+        extractBillingDate(body) ||
+        getNextBillingDateFromReceipt(purchaseDate, cycle);
 
       return {
   gmailMessageId: msg.id || null,
@@ -645,17 +649,53 @@ function extractAmount(text) {
   return null;
 }
 
+function dateForInput(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 function extractBillingDate(text) {
   const cleanText = String(text || "");
 
   const patterns = [
-    /(?:next billing date|next billing|renewal date|renews on|due date|charged on)[\s:]*([A-Za-z]+\s+\d{1,2},\s+\d{4})/i,
-    /([A-Za-z]+\s+\d{1,2},\s+\d{4})/
+    /(?:next billing date|next billing|renewal date|renews on|next charge date|next charge|next payment date|next payment)[\s:]*([A-Za-z]+\s+\d{1,2},\s+\d{4})/i,
+    /(?:next billing date|next billing|renewal date|renews on|next charge date|next charge|next payment date|next payment)[\s:]*(\d{4}-\d{2}-\d{2})/i
   ];
 
   for (const pattern of patterns) {
     const match = cleanText.match(pattern);
-    if (match) return match[1].trim();
+
+    if (match) {
+      return dateForInput(match[1]);
+    }
+  }
+
+  return null;
+}
+
+function extractPurchaseDate(text) {
+  const cleanText = String(text || "");
+
+  const patterns = [
+    /(?:charged on|payment date|purchase date|paid on|receipt date)[\s:]*([A-Za-z]+\s+\d{1,2},\s+\d{4})/i,
+    /(?:charged on|payment date|purchase date|paid on|receipt date)[\s:]*(\d{4}-\d{2}-\d{2})/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = cleanText.match(pattern);
+
+    if (match) {
+      return match[1].trim();
+    }
   }
 
   return null;
@@ -668,6 +708,37 @@ function extractCycle(text) {
   if (/monthly|per month|\/month/i.test(cleanText)) return "monthly";
 
   return "monthly";
+}
+
+function getNextBillingDateFromReceipt(value, cycle) {
+  const source = new Date(value);
+
+  if (Number.isNaN(source.getTime())) {
+    return null;
+  }
+
+  const sourceYear = source.getFullYear();
+  const sourceMonth = source.getMonth();
+  const sourceDay = source.getDate();
+
+  const targetYear =
+    cycle === "annual"
+      ? sourceYear + 1
+      : sourceYear;
+
+  const targetMonth =
+    cycle === "annual"
+      ? sourceMonth
+      : sourceMonth + 1;
+
+  const finalDayOfTargetMonth =
+    new Date(targetYear, targetMonth + 1, 0).getDate();
+
+  const targetDay = Math.min(sourceDay, finalDayOfTargetMonth);
+
+  return dateForInput(
+    new Date(targetYear, targetMonth, targetDay)
+  );
 }
 
 function decodeIdToken(token) {
