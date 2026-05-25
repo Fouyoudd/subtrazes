@@ -102,12 +102,24 @@ self.addEventListener("notificationclick", function (event) {
       type: "window",
       includeUncontrolled: true
     }).then(function (windowClients) {
-      const matchingTab = windowClients.find(function (client) {
-        return client.url === urlToOpen && "focus" in client;
+      const existingApp = windowClients.find(function (client) {
+        try {
+          return (
+            ALLOWED_APP_ORIGINS.has(new URL(client.url).origin) &&
+            "focus" in client
+          );
+        } catch (_) {
+          return false;
+        }
       });
 
-      if (matchingTab) {
-        return matchingTab.focus();
+      if (existingApp) {
+        return existingApp.focus().then(function () {
+          existingApp.postMessage({
+            type: "SUBTRAZ_PUSH_OPEN_URL",
+            url: urlToOpen
+          });
+        });
       }
 
       return clients.openWindow(urlToOpen);

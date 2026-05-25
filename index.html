@@ -21294,6 +21294,28 @@ document.addEventListener('DOMContentLoaded', async function() {
 (function subtracksPushAutofillFix() {
   const STORAGE_KEY = "subtracks-pending-push-autofill";
 
+    if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.addEventListener("message", function (event) {
+      const data = event.data || {};
+
+      if (data.type !== "SUBTRAZ_PUSH_OPEN_URL" || !data.url) {
+        return;
+      }
+
+      try {
+        const targetUrl = new URL(data.url, window.location.origin);
+
+        if (targetUrl.origin !== window.location.origin) {
+          return;
+        }
+
+        window.location.href = targetUrl.href;
+      } catch (_) {
+        return;
+      }
+    });
+  }
+
   function addNextBillingDateFromToday(cycle) {
     const today = new Date();
 
