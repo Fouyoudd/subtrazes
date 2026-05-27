@@ -5090,6 +5090,127 @@ body.app-on .a2hsCornerBtn {
   }
 }
 
+/* ===== MOBILE DEMO FIXES ===== */
+
+/* keep all mobile demo blocks centered */
+.scDemoPage,
+.scDemoV2Page,
+.scDemoNotifPage {
+  box-sizing: border-box !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+
+.scDemoPage > *,
+.scDemoV2Page > *,
+.scDemoNotifPage > * {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* ---------- FIRST SLIDE ---------- */
+.scDemoIntroPage {
+  justify-content: center !important;
+  padding-top: max(70px, calc(env(safe-area-inset-top, 0px) + 54px)) !important;
+  padding-bottom: 20px !important;
+}
+
+.scDemoIntroPage .scDemoIntroContent {
+  width: min(100%, 355px) !important;
+  min-height: calc(100dvh - 145px) !important;
+  margin: 0 auto !important;
+  padding: 20px !important;
+  border-radius: 26px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  box-sizing: border-box !important;
+}
+
+.scDemoIntroPage .scDemoIntroContent h1 {
+  font-size: 38px !important;
+  line-height: .96 !important;
+  letter-spacing: -.06em !important;
+  margin-top: 24px !important;
+  margin-bottom: 0 !important;
+  max-width: 290px !important;
+}
+
+.scDemoIntroPage .scDemoIntroContent .scDemoPrimaryBtn {
+  margin-top: auto !important;
+}
+
+.scDemoIntroPage .scDemoIntroContent .demo-guide-tooltip.bottom-arrow {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  bottom: calc(100% + 12px) !important;
+}
+
+.scDemoIntroPage .scDemoIntroContent .demo-guide-tooltip.bottom-arrow::after {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+/* ---------- SECOND SLIDE ---------- */
+.scDemoV2Hero,
+.scDemoV2SectionHead,
+.scDemoV2Hint {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+
+.scDemoV2Hero {
+  padding: 18px !important;
+}
+
+.scDemoV2Hero h1 {
+  font-size: 24px !important;
+  line-height: .98 !important;
+  letter-spacing: -.05em !important;
+}
+
+.scDemoV2Hero p {
+  margin-top: 8px !important;
+}
+
+.scDemoV2Card {
+  width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+
+/* keep CTA arrows/guides centered */
+.demo-guide-tooltip.top-arrow,
+.demo-guide-tooltip.bottom-arrow {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+.demo-guide-tooltip.top-arrow::after,
+.demo-guide-tooltip.bottom-arrow::after {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+/* ---------- NOTIFICATION / OTHER MOBILE SLIDES ---------- */
+.scDemoNotifHeader,
+.scDemoNotifStack,
+.scDemoNotifHint,
+.scDemoNotifFooter,
+.scDemoFormCard,
+.scDemoTrackedCard,
+.scDemoReminderCard {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+
 </style>
 
 <style>
@@ -11330,45 +11451,7 @@ body.app-on #insights .premiumFill-4 {
 
 @media (min-width: 769px) {
 
-  /* Make the checkout actions clearly clickable */
-  .pcFlowScene[data-pc-scene="checkout"].active .pcFlowBuyBtn {
-    position: relative;
-    animation: pcFlowClickTarget 2s ease-in-out infinite;
-  }
-
-  .pcFlowScene[data-pc-scene="checkout"].active .pcFlowBuyBtn::before {
-    content: "Click to start demo";
-    position: absolute;
-    left: 50%;
-    bottom: calc(100% + 12px);
-    transform: translateX(-50%);
-    min-height: 30px;
-    display: inline-flex;
-    align-items: center;
-    padding: 0 12px;
-    border-radius: 999px;
-    background: #101828;
-    color: #ffffff;
-    font-size: 10px;
-    font-weight: 900;
-    white-space: nowrap;
-    box-shadow: 0 13px 25px rgba(15, 23, 42, .18);
-    animation: pcFlowGuideFloat 1.7s ease-in-out infinite;
-  }
-
-  .pcFlowScene[data-pc-scene="checkout"].active .pcFlowBuyBtn::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    bottom: calc(100% + 5px);
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-top: 7px solid #101828;
-    animation: pcFlowGuideFloatArrow 1.7s ease-in-out infinite;
-  }
+  /* Old guide styles replaced with global tooltips */
 
   .pcFlowScene[data-pc-scene="checkout"].active .pcFlowAltBtn {
     border-color: #bbf7d0 !important;
@@ -12907,6 +12990,518 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
 }
 </style>
 
+<style>
+/* ===== NEW INTERACTIVE DEMO GUIDES ===== */
+.demo-guide-target {
+  position: relative;
+  z-index: 10;
+  animation: demoTargetPulse 2s infinite !important;
+}
+
+@keyframes demoTargetPulse {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6) !important; }
+  70% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0) !important; }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0) !important; }
+}
+
+.demo-guide-tooltip {
+  position: absolute;
+  background: #101828;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 8px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  z-index: 100;
+  animation: demoTooltipFloat 2s infinite ease-in-out;
+  display: block !important;
+}
+
+.demo-guide-tooltip.bottom-arrow {
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.demo-guide-tooltip.bottom-arrow::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -6px;
+  border-width: 6px 6px 0 6px;
+  border-style: solid;
+  border-color: #101828 transparent transparent transparent;
+}
+
+.demo-guide-tooltip.top-arrow {
+  top: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.demo-guide-tooltip.top-arrow::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-left: -6px;
+  border-width: 0 6px 6px 6px;
+  border-style: solid;
+  border-color: transparent transparent #101828 transparent;
+}
+
+@keyframes demoTooltipFloat {
+  0%, 100% { margin-top: 0; margin-bottom: 0; }
+  50% { margin-top: -5px; margin-bottom: 5px; }
+}
+
+/* Ensure tooltips aren't hidden by overflow on some cards */
+.scDemoPhoneNotification.demo-guide-target,
+.pcFlowMailRow.demo-guide-target {
+  overflow: visible !important;
+}
+</style>
+
+<style>
+/* ===== VIEWPORT OVERFLOW & DRAGGING FIX ===== */
+.scDemo, .subtrazMobileOnboarding {
+  touch-action: none !important;
+  overscroll-behavior: none !important;
+}
+.scDemoScreen {
+  overflow: hidden !important;
+}
+.subtrazOnboardingTrack {
+  touch-action: none !important;
+}
+
+/* ===== NEW INTERACTIVE DEMO GUIDES ===== */
+.demo-guide-target {
+  position: relative;
+  z-index: 10;
+  animation: demoTargetPulse 2s infinite !important;
+}
+
+@keyframes demoTargetPulse {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6) !important; }
+  70% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0) !important; }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0) !important; }
+}
+
+.demo-guide-tooltip {
+  position: absolute;
+  background: #101828;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 8px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  z-index: 100;
+  animation: demoTooltipFloat 2s infinite ease-in-out;
+  display: block !important;
+}
+
+.demo-guide-tooltip.bottom-arrow {
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.demo-guide-tooltip.bottom-arrow::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -6px;
+  border-width: 6px 6px 0 6px;
+  border-style: solid;
+  border-color: #101828 transparent transparent transparent;
+}
+
+.demo-guide-tooltip.top-arrow {
+  top: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.demo-guide-tooltip.top-arrow::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-left: -6px;
+  border-width: 0 6px 6px 6px;
+  border-style: solid;
+  border-color: transparent transparent #101828 transparent;
+}
+
+@keyframes demoTooltipFloat {
+  0%, 100% { margin-top: 0; margin-bottom: 0; }
+  50% { margin-top: -5px; margin-bottom: 5px; }
+}
+
+.scDemoPhoneNotification.demo-guide-target,
+.pcFlowMailRow.demo-guide-target {
+  overflow: visible !important;
+}
+</style>
+
+<style>
+/* ===== PC intro card and improved demo guides ===== */
+
+@media (min-width: 769px) {
+  .pcFlowScene.pcFlowIntroScene.active {
+    display: flex !important;
+    align-items: stretch !important;
+    padding: 22px 29px 29px !important;
+  }
+
+  .pcIntroCard {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 26px;
+    overflow: visible;
+    border: 1px solid rgba(134, 239, 172, .18);
+    border-radius: 25px;
+    background:
+      radial-gradient(circle at 84% 10%, rgba(34, 197, 94, .20), transparent 30%),
+      radial-gradient(circle at 12% 96%, rgba(74, 222, 128, .11), transparent 33%),
+      linear-gradient(145deg, rgba(3, 32, 23, .96), rgba(7, 55, 38, .88));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .06),
+      0 22px 48px rgba(0, 0, 0, .17);
+  }
+
+  .pcIntroTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .pcIntroLogo {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .10);
+  }
+
+  .pcIntroLogo img {
+    width: 27px;
+    height: 27px;
+    object-fit: contain;
+  }
+
+  .pcIntroLive {
+    min-height: 29px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    border: 1px solid rgba(134, 239, 172, .22);
+    border-radius: 999px;
+    background: rgba(34, 197, 94, .12);
+    color: #bbf7d0 !important;
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 950;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .pcIntroLive i {
+    width: 7px;
+    height: 7px;
+    display: block;
+    border-radius: 999px;
+    background: #4ade80;
+    box-shadow: 0 0 12px rgba(74, 222, 128, .8);
+    animation: pcIntroLivePulse 1.45s ease-in-out infinite;
+  }
+
+  .pcIntroKicker {
+    margin-top: 32px !important;
+    color: #86efac !important;
+    font-size: 10px !important;
+    line-height: 1 !important;
+    font-weight: 950 !important;
+    letter-spacing: .16em !important;
+    text-transform: uppercase !important;
+  }
+
+  .pcIntroCard h2 {
+    max-width: 430px;
+    margin: 15px 0 0 !important;
+    color: #ffffff !important;
+    font-size: 40px !important;
+    line-height: 1.02 !important;
+    font-weight: 950 !important;
+    letter-spacing: -.055em !important;
+  }
+
+  .pcIntroCopy {
+    margin-top: 11px !important;
+    color: rgba(220, 240, 228, .68) !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    font-weight: 600 !important;
+  }
+
+  .pcIntroFeatures {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 11px;
+    margin-top: 28px;
+  }
+
+  .pcIntroFeature {
+    min-height: 78px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 13px;
+    border: 1px solid rgba(255, 255, 255, .10);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .055);
+  }
+
+  .pcIntroFeatureIcon {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(134, 239, 172, .18);
+    border-radius: 12px;
+    background: rgba(34, 197, 94, .12);
+    color: #4ade80 !important;
+  }
+
+  .pcIntroFeatureIcon svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .pcIntroFeature strong {
+    display: block;
+    color: #ffffff !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+  }
+
+  .pcIntroFeature small {
+    display: block;
+    margin-top: 5px;
+    color: rgba(220, 240, 228, .57) !important;
+    font-size: 10.5px !important;
+    line-height: 1.35 !important;
+    font-weight: 650 !important;
+  }
+
+  .pcIntroStart {
+    position: relative;
+    width: 100%;
+    min-height: 52px;
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+    border: 1px solid rgba(134, 239, 172, .28) !important;
+    border-radius: 15px !important;
+    background: linear-gradient(135deg, #16a34a, #22c55e) !important;
+    color: #ffffff !important;
+    font-size: 13px !important;
+    font-weight: 950 !important;
+    box-shadow: 0 14px 30px rgba(34, 197, 94, .23) !important;
+  }
+
+  .pcIntroStart b {
+    width: 23px;
+    height: 23px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .17);
+    color: #ffffff !important;
+    font-size: 14px;
+  }
+
+  .pcFlowScene[data-pc-scene="receipt"],
+  .pcFlowScene[data-pc-scene="autofill"] {
+    padding-top: 29px !important;
+  }
+
+  .pcFlowScene[data-pc-scene="checkout"].active .pcFlowBuyBtn::before,
+  .pcFlowScene[data-pc-scene="checkout"].active .pcFlowBuyBtn::after {
+    display: none !important;
+  }
+}
+
+/* Shared click and tap guide */
+.demo-guide-target {
+  position: relative !important;
+  overflow: visible !important;
+  isolation: isolate;
+  animation: scTargetGlow 1.8s ease-in-out infinite !important;
+}
+
+.demo-guide-tooltip {
+  min-height: 33px;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 0 13px 0 11px !important;
+  border: 1px solid rgba(134, 239, 172, .38) !important;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, rgba(5, 45, 32, .98), rgba(12, 91, 57, .96)) !important;
+  color: #dcfce7 !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+  box-shadow:
+    0 11px 25px rgba(0, 0, 0, .20),
+    0 0 24px rgba(34, 197, 94, .20) !important;
+  animation: scGuideFloat 1.5s ease-in-out infinite !important;
+}
+
+.demo-guide-tooltip::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  display: block;
+  border-radius: 999px;
+  background: #4ade80;
+  box-shadow: 0 0 0 0 rgba(74, 222, 128, .5);
+  animation: scGuideDot 1.3s ease-in-out infinite;
+}
+
+.demo-guide-tooltip.bottom-arrow {
+  bottom: calc(100% + 36px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+.demo-guide-tooltip.bottom-arrow::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 7px);
+  width: 2px;
+  height: 24px;
+  border: 0 !important;
+  border-radius: 999px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #4ade80, #16a34a) !important;
+  box-shadow: 0 0 10px rgba(74, 222, 128, .44);
+}
+
+.demo-guide-tooltip.top-arrow {
+  top: calc(100% + 36px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+.demo-guide-tooltip.top-arrow::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 7px);
+  width: 2px;
+  height: 24px;
+  border: 0 !important;
+  border-radius: 999px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #16a34a, #4ade80) !important;
+  box-shadow: 0 0 10px rgba(74, 222, 128, .44);
+}
+
+@keyframes pcIntroLivePulse {
+  0%, 100% {
+    opacity: .55;
+    transform: scale(.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.16);
+  }
+}
+
+@keyframes scTargetGlow {
+  0%, 100% {
+    box-shadow:
+      0 13px 27px rgba(34, 197, 94, .18),
+      0 0 0 0 rgba(74, 222, 128, .30) !important;
+  }
+  55% {
+    box-shadow:
+      0 16px 33px rgba(34, 197, 94, .26),
+      0 0 0 8px rgba(74, 222, 128, 0) !important;
+  }
+}
+
+@keyframes scGuideDot {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, .5);
+  }
+  55% {
+    box-shadow: 0 0 0 7px rgba(74, 222, 128, 0);
+  }
+}
+
+@keyframes scGuideFloat {
+  0%, 100% {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+  50% {
+    margin-top: -4px;
+    margin-bottom: 4px;
+  }
+}
+
+@media (max-width: 768px) {
+  .demo-guide-tooltip {
+    min-height: 30px;
+    padding: 0 11px 0 10px !important;
+    font-size: 9px !important;
+  }
+
+  .demo-guide-tooltip.bottom-arrow {
+    bottom: calc(100% + 29px) !important;
+  }
+
+  .demo-guide-tooltip.top-arrow {
+    top: calc(100% + 29px) !important;
+  }
+
+  .demo-guide-tooltip.bottom-arrow::after,
+  .demo-guide-tooltip.top-arrow::after {
+    height: 19px;
+  }
+}
+</style>
+
 </head>
 <body class="home-on">
 <script>
@@ -12994,24 +13589,76 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
       </div>
 
       <div class="pcFlowProgress">
-        <span class="active" data-pc-flow-dot="checkout">Purchase</span>
+        <span class="active" data-pc-flow-dot="intro">Intro</span>
+        <span data-pc-flow-dot="checkout">Purchase</span>
         <span data-pc-flow-dot="receipt">Receipt</span>
         <span data-pc-flow-dot="tracked">Tracked</span>
         <span data-pc-flow-dot="reminder">Reminder</span>
       </div>
 
-      <!-- SHORT EXPLANATION THAT CHANGES PER DEMO SCREEN -->
-      <div class="pcFlowExplain" id="pcFlowExplain">
-        <span class="pcFlowExplainLabel" id="pcFlowExplainLabel">Step 1</span>
-        <h3 id="pcFlowExplainTitle">Start with a sample purchase</h3>
-        <p id="pcFlowExplainCopy">
-          Choose a subscription or free trial to see how Subtraz responds.
-        </p>
+      <!-- The progress row already shows the current demo step. -->
+
+      <div class="pcFlowScene active pcFlowIntroScene" data-pc-scene="intro">
+        <div class="pcIntroCard">
+          <div class="pcIntroTop">
+            <span class="pcIntroLogo">
+              <img
+                src="https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png"
+                alt="Subtraz"
+              >
+            </span>
+
+            <span class="pcIntroLive">
+              <i></i>
+              Live demo
+            </span>
+          </div>
+
+          <p class="pcIntroKicker">Receipt Auto-Fill + Renewal Reminders</p>
+
+          <h2>See what Subtraz catches.</h2>
+
+          <p class="pcIntroCopy">Receipts become reminders in seconds.</p>
+
+          <div class="pcIntroFeatures">
+            <div class="pcIntroFeature">
+              <span class="pcIntroFeatureIcon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M7 3h8l4 4v14H7z"></path>
+                  <path d="M15 3v5h4"></path>
+                  <path d="M10 12h6"></path>
+                  <path d="M10 16h4"></path>
+                </svg>
+              </span>
+              <div>
+                <strong>Receipt Auto-Fill</strong>
+                <small>Fills details from receipts</small>
+              </div>
+            </div>
+
+            <div class="pcIntroFeature">
+              <span class="pcIntroFeatureIcon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 18h12l-1.5-2.2v-4.4a4.5 4.5 0 0 0-9 0v4.4z"></path>
+                  <path d="M10 20a2.2 2.2 0 0 0 4 0"></path>
+                </svg>
+              </span>
+              <div>
+                <strong>Renewal Reminders</strong>
+                <small>Alerts before renewal</small>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="pcIntroStart demo-guide-target" data-pc-advance="checkout">
+            <span>Start demo</span>
+            <b>→</b>
+            <span class="demo-guide-tooltip bottom-arrow">Click here</span>
+          </button>
+        </div>
       </div>
 
-
-      <!-- STATE 1: PURCHASE -->
-      <div class="pcFlowScene active" data-pc-scene="checkout">
+      <div class="pcFlowScene" data-pc-scene="checkout">
         <div class="pcFlowBrowser">
           <div class="pcFlowProvider">
             <span class="pcFlowProviderLogo">
@@ -13033,22 +13680,23 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
           <div class="pcFlowPlanSelected">
             <div>
               <small>Premium monthly</small>
-              <strong data-pc-plan-price>₱249 / month</strong>
+              <strong data-pc-plan-price>$19.99 / month</strong>
             </div>
             <span>Selected</span>
           </div>
 
           <div class="pcFlowPayRow">
             <span>Total due today</span>
-            <strong data-pc-pay-price>₱249</strong>
+            <strong data-pc-pay-price>$19.99</strong>
           </div>
 
           <button
             type="button"
-            class="pcFlowBuyBtn"
+            class="pcFlowBuyBtn demo-guide-target"
             data-pc-buy="subscription"
           >
             Confirm subscription
+            <div class="demo-guide-tooltip bottom-arrow">Click to confirm</div>
           </button>
 
           <button
@@ -13085,7 +13733,7 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
 
           <div class="pcFlowProcessingReceipt">
             <span>Order total</span>
-            <strong data-pc-processing-price>₱249</strong>
+            <strong data-pc-processing-price>$19.99</strong>
           </div>
         </div>
       </div>
@@ -13099,12 +13747,13 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
           </div>
 
           <div
-  class="pcFlowMailRow"
+  class="pcFlowMailRow demo-guide-target"
   data-pc-open-autofill
   role="button"
   tabindex="0"
   aria-label="Open auto-filled subscription from receipt"
 >
+            <div class="demo-guide-tooltip top-arrow">Click email</div>
             <span class="pcFlowMailLogo" data-pc-receipt-logo-wrap>
               <img
                 src="https://www.google.com/s2/favicons?domain=netflix.com&sz=128"
@@ -13115,7 +13764,7 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
             <div>
               <strong data-pc-receipt-sender>Netflix</strong>
               <p data-pc-receipt-subject>Your Netflix Premium receipt</p>
-              <small data-pc-receipt-detail>₱249 paid today</small>
+              <small data-pc-receipt-detail>$19.99 paid today</small>
             </div>
             <time>now</time>
           </div>
@@ -13144,7 +13793,7 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
         <div class="pcFlowReceiptProof">
           <span>Receipt found</span>
           <strong data-pc-proof-title>Netflix Premium</strong>
-          <p data-pc-proof-copy>₱249 paid today - monthly plan</p>
+          <p data-pc-proof-copy>$19.99 paid today - monthly plan</p>
         </div>
 
         <div class="pcFlowFormPanel">
@@ -13161,7 +13810,7 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
           <div class="pcFlowTwoFields">
             <div class="pcFlowField">
               <small>Amount</small>
-              <strong data-pc-form-price>₱249</strong>
+              <strong data-pc-form-price>$19.99</strong>
             </div>
 
             <div class="pcFlowField">
@@ -13170,8 +13819,9 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
             </div>
           </div>
 
-          <button type="button" class="pcFlowAddBtn" data-pc-add>
+          <button type="button" class="pcFlowAddBtn demo-guide-target" data-pc-add>
             Add subscription
+            <div class="demo-guide-tooltip bottom-arrow">Click to save</div>
           </button>
         </div>
       </div>
@@ -13188,11 +13838,12 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
               <strong data-pc-tracked-name>Netflix Premium</strong>
               <small data-pc-tracked-status>Active subscription</small>
             </div>
-            <strong data-pc-tracked-price>₱249</strong>
+            <strong data-pc-tracked-price>$19.99</strong>
           </div>
 
-          <button type="button" class="pcFlowAdvanceBtn" data-pc-time-jump>
+          <button type="button" class="pcFlowAdvanceBtn demo-guide-target" data-pc-time-jump>
             See what happens before renewal
+            <div class="demo-guide-tooltip bottom-arrow">Click to skip ahead</div>
           </button>
         </div>
       </div>
@@ -13215,19 +13866,22 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
           </div>
 
           <h2 data-pc-reminder-title>Netflix renews tomorrow.</h2>
-          <p data-pc-reminder-copy>Review this subscription before your next ₱249 charge.</p>
+          <p data-pc-reminder-copy>Review this subscription before your next $19.99 charge.</p>
 
           <div class="pcFlowDecisionCard">
             <div>
               <strong data-pc-decision-name>Netflix Premium</strong>
               <small data-pc-decision-status>Active - renews tomorrow</small>
             </div>
-            <strong data-pc-decision-price>₱249</strong>
+            <strong data-pc-decision-price>$19.99</strong>
           </div>
 
           <div class="pcFlowDecisionActions">
             <span>Keep subscription</span>
-            <span class="cancel" data-pc-decision-action>Cancel before renewal</span>
+            <span class="cancel demo-guide-target" data-pc-decision-action style="cursor:pointer;">
+              Cancel before renewal
+              <div class="demo-guide-tooltip bottom-arrow">Click action</div>
+            </span>
           </div>
 
           <button
@@ -13290,12 +13944,86 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
     <span></span>
     <span></span>
     <span></span>
+    <span></span>
   </div>
 
   <div class="scDemoTrack" id="scDemoTrack">
+
+    <article class="scDemoScreen active" data-demo-screen="intro">
+  <div class="scDemoPage scDemoIntroPage">
+    <div class="scDemoIntroLayout">
+
+      <div class="scDemoIntroBrandLine">
+        <span class="scDemoIntroLogo">
+          <img
+            src="https://plain-apac-prod-public.komododecks.com/202605/09/ZIboAgsmtLYiF8SL1RwT/image.png"
+            alt="Subtraz"
+          >
+        </span>
+
+        <div class="scDemoIntroBrandCopy">
+          <strong>Subtraz</strong>
+          <small>Live demo</small>
+        </div>
+
+        <span class="scDemoIntroBadge">2 features</span>
+      </div>
+
+      <div class="scDemoIntroMain">
+        <span class="scDemoIntroLabel">Auto-Fill + Reminders</span>
+
+        <h1>Receipts become reminders.</h1>
+
+        <div class="scDemoIntroFeatures">
+          <div class="scDemoIntroFeature">
+            <span class="scDemoIntroFeatureIcon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 3h8l4 4v14H7z"></path>
+                <path d="M15 3v5h4"></path>
+                <path d="M10 12h6"></path>
+                <path d="M10 16h4"></path>
+              </svg>
+            </span>
+
+            <div>
+              <strong>Receipt Auto-Fill</strong>
+              <small>Fills receipt details</small>
+            </div>
+          </div>
+
+          <div class="scDemoIntroFeature">
+            <span class="scDemoIntroFeatureIcon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 18h12l-1.5-2.2v-4.4a4.5 4.5 0 0 0-9 0v4.4z"></path>
+                <path d="M10 20a2.2 2.2 0 0 0 4 0"></path>
+              </svg>
+            </span>
+
+            <div>
+              <strong>Renewal Reminders</strong>
+              <small>Alerts before billing</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="scDemoIntroFooter">
+        <button
+          type="button"
+          class="scDemoPrimaryBtn scDemoIntroButton demo-guide-target"
+          data-demo-advance="choice"
+        >
+          Start demo
+          <b>→</b>
+          <span class="demo-guide-tooltip bottom-arrow">Tap here</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</article>
     
-    <!-- SCREEN 1: USER CHOOSES A FAKE PURCHASE -->
-    <article class="scDemoScreen active" data-demo-screen="choice">
+    <article class="scDemoScreen" data-demo-screen="choice">
       <div class="scDemoPage scDemoSubscriptionPage scDemoV2Home">
 
         <header class="scDemoV2Header">
@@ -13321,33 +14049,27 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
           </button>
         </header>
 
-        <section class="scDemoV2Hero">
+        <section class="scDemoV2Hero" style="padding-bottom:16px;">
           <div class="scDemoV2HeroTop">
-            <span>Demo overview</span>
-            <b>Receipt Auto-Fill on</b>
+            <span>Step 1</span>
+            <b>Auto-Fill on</b>
           </div>
 
-          <h1>Track the next charge before it happens.</h1>
-          <p>Choose a sample purchase and see how Subtraz turns a receipt into a reminder.</p>
-
-          <div class="scDemoV2HeroStats">
-            <div>
-              <small>Tracked now</small>
-              <strong>0</strong>
-            </div>
-            <div>
-              <small>Possible monthly spend</small>
-              <strong>₱548</strong>
-            </div>
-          </div>
+          <h1>Pick a plan.</h1>
+          <p>Subtraz catches the receipt.</p>
         </section>
 
         <div class="scDemoV2SectionHead">
           <div>
-            <h2>Pick a sample plan</h2>
-            <p>This is a clickable product demo.</p>
+            <h2>Choose one</h2>
           </div>
           <span>2 options</span>
+        </div>
+
+        <div class="scDemoChoiceGuide">
+          <span></span>
+          Tap a plan
+          <b>↓</b>
         </div>
 
         <section class="scDemoV2Plans">
@@ -13370,17 +14092,17 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
               </div>
 
               <div class="scDemoV2Price">
-                <strong>₱249</strong>
+                <strong>$19.99</strong>
                 <small>/mo</small>
               </div>
             </div>
 
             <button
               type="button"
-              class="scDemoV2Action buy"
+              class="scDemoV2Action buy demo-guide-target"
               data-demo-path="subscription"
             >
-              <span>Buy subscription</span>
+              <span>Buy plan</span>
               <b>→</b>
             </button>
           </article>
@@ -13399,31 +14121,28 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
                   <strong>CapCut Pro</strong>
                   <small class="trial">Trial</small>
                 </div>
-                <p>7 days free, then paid</p>
+                <p>7-day trial</p>
               </div>
 
               <div class="scDemoV2Price">
-                <strong>₱299</strong>
+                <strong>$9.99</strong>
                 <small>after</small>
               </div>
             </div>
 
             <button
-              type="button"
-              class="scDemoV2Action trial"
-              data-demo-path="trial"
-            >
-              <span>Start free trial</span>
-              <b>→</b>
-            </button>
+  type="button"
+  class="scDemoV2Action trial demo-guide-target"
+  data-demo-path="trial"
+>
+  <span>Start trial</span>
+  <b>→</b>
+</button>
           </article>
 
         </section>
 
-        <div class="scDemoV2Hint">
-          <span class="scDemoV2HintIcon">✦</span>
-          <p>Next: see a receipt alert and an auto-filled subscription form.</p>
-        </div>
+
 
       </div>
     </article>
@@ -13458,7 +14177,7 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
 
             <div>
               <span>Total today</span>
-              <strong data-demo-processing-price>₱249</strong>
+              <strong data-demo-processing-price>$19.99</strong>
             </div>
           </div>
 
@@ -13490,12 +14209,13 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
 
         <div class="scDemoAlertIntro">
           <span class="scDemoLabel">Receipt Auto-Fill</span>
-          <p>Tap either alert to continue.</p>
+          <p>Receipt detected.</p>
         </div>
 
         <div class="scDemoPhoneNotifications">
 
-          <button type="button" class="scDemoPhoneNotification push" data-demo-receipt-open>
+          <button type="button" class="scDemoPhoneNotification push demo-guide-target" data-demo-receipt-open>
+            <div class="demo-guide-tooltip bottom-arrow">Tap notification</div>
             <div class="scDemoNotifHead">
               <span class="scDemoNotifApp">
                 <img
@@ -13509,7 +14229,7 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
 
             <h3 data-demo-push-title>Netflix Premium receipt detected</h3>
             <p data-demo-push-copy>
-              Tap to add your ₱249 monthly subscription.
+              Tap to add your $19.99 monthly subscription.
             </p>
           </button>
 
@@ -13543,7 +14263,7 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
         <div class="scDemoScreenHead">
           <span class="scDemoLabel">Auto-filled</span>
           <h2>Ready to add.</h2>
-          <p>Subtraz already filled the important details.</p>
+          <p>Details filled automatically.</p>
         </div>
 
         <form class="scDemoFilledForm">
@@ -13569,7 +14289,7 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
           <div class="scDemoFormTwo">
             <label>
               <span>Amount</span>
-              <input type="text" value="₱249" data-demo-field-amount readonly>
+              <input type="text" value="$19.99" data-demo-field-amount readonly>
             </label>
 
             <label>
@@ -13583,8 +14303,9 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
             <input type="text" value="Jun 24" data-demo-field-date readonly>
           </label>
 
-          <button type="button" class="scDemoPrimaryBtn" data-demo-add>
+          <button type="button" class="scDemoPrimaryBtn demo-guide-target" data-demo-add>
             Add subscription
+            <div class="demo-guide-tooltip bottom-arrow">Tap to save</div>
           </button>
         </form>
       </div>
@@ -13599,7 +14320,7 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
 
         <span class="scDemoLabel">Saved</span>
         <h2 data-demo-tracked-title>Netflix is now tracked.</h2>
-        <p data-demo-tracked-copy>Your next payment is visible, and Subtraz can remind you before renewal.</p>
+        <p data-demo-tracked-copy>Saved and ready for reminders.</p>
 
         <div class="scDemoTrackedCard">
           <div class="scDemoTrackedService">
@@ -13614,7 +14335,7 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
               <strong data-demo-tracked-service>Netflix Premium</strong>
               <small data-demo-tracked-meta>Active subscription</small>
             </div>
-            <b data-demo-tracked-price>₱249</b>
+            <b data-demo-tracked-price>$19.99</b>
           </div>
 
           <div class="scDemoTrackedStats">
@@ -13624,13 +14345,14 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
             </div>
             <div>
               <small data-demo-stat-two-label>Monthly total</small>
-              <strong data-demo-stat-two-value>₱249</strong>
+              <strong data-demo-stat-two-value>$19.99</strong>
             </div>
           </div>
         </div>
 
-        <button type="button" class="scDemoPrimaryBtn" data-demo-continue>
+        <button type="button" class="scDemoPrimaryBtn demo-guide-target" data-demo-continue>
           See reminder alerts
+          <div class="demo-guide-tooltip bottom-arrow">Tap to skip ahead</div>
         </button>
       </div>
     </article>
@@ -13651,7 +14373,7 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
           <h2 data-demo-time-title>29 days later</h2>
 
           <p data-demo-time-copy>
-            Your Netflix renewal is due tomorrow.
+            Renewal is due tomorrow.
           </p>
 
           <div class="scDemoTimeAlert">
@@ -13673,16 +14395,16 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
         <div class="scDemoScreenHead">
           <span class="scDemoLabel">Before renewal</span>
           <h2 data-demo-reminder-heading>Netflix renews tomorrow.</h2>
-          <p>Open either reminder to review it in Subtraz.</p>
         </div>
 
         <div class="scDemoReminderStack">
-          <button type="button" class="scDemoReminderEmail" data-demo-reminder-open>
+          <button type="button" class="scDemoReminderEmail demo-guide-target" data-demo-reminder-open>
+            <div class="demo-guide-tooltip bottom-arrow">Tap to open reminder</div>
             <span class="scDemoMailIcon">✉</span>
             <div>
               <small>SUBTRAZ EMAIL REMINDER</small>
               <strong data-demo-email-subject>Netflix Premium renews tomorrow</strong>
-              <p data-demo-email-body>Review this subscription before your next ₱249 charge.</p>
+              <p data-demo-email-body>Review this subscription before your next $19.99 charge.</p>
               <b>Review renewal</b>
             </div>
           </button>
@@ -13725,7 +14447,7 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
               <strong data-demo-final-service>Netflix Premium</strong>
               <small data-demo-final-status>Active - renews tomorrow</small>
             </div>
-            <b data-demo-final-price>₱249</b>
+            <b data-demo-final-price>$19.99</b>
           </div>
 
           <div class="scDemoFinalOptions">
@@ -19756,6 +20478,7 @@ let subtrazDemoTimeJumpPlaying = false;
 let subtrazDemoTimeJumpTimer = null;
 
 const SUBTRAZ_DEMO_SCREENS = [
+  "intro",
   "choice",
   "receipt",
   "autofill",
@@ -19769,7 +20492,7 @@ const SUBTRAZ_DEMO_DATA = {
   subscription: {
     name: "Netflix Premium",
     logo: "https://www.google.com/s2/favicons?domain=netflix.com&sz=128",
-    amount: "₱249",
+    amount: "$19.99",
     status: "Active",
     billingLabel: "Next billing date",
     billingDate: "Jun 24",
@@ -19777,14 +20500,14 @@ const SUBTRAZ_DEMO_DATA = {
     processingTitle: "Processing payment...",
     processingCopy: "Confirming your Netflix Premium monthly subscription.",
     processingPlan: "Netflix Premium",
-    processingPrice: "₱249",
+    processingPrice: "$19.99",
     processingStatus: "Secure payment in progress",
     confirmedTitle: "Payment confirmed",
     confirmedCopy: "Your Netflix Premium subscription is active.",
     confirmedStatus: "Receipt sent to your email",
 
     pushTitle: "Netflix Premium receipt detected",
-    pushCopy: "Tap to add your ₱249 monthly subscription.",
+    pushCopy: "Tap to add your $19.99 monthly subscription.",
     emailAlertCopy: "Netflix Premium was found in your receipt. Tap to add it.",
 
     trackedTitle: "Netflix is now tracked.",
@@ -19793,7 +20516,7 @@ const SUBTRAZ_DEMO_DATA = {
     statOneLabel: "Next billing",
     statOneValue: "Jun 24",
     statTwoLabel: "Monthly total",
-    statTwoValue: "₱249",
+    statTwoValue: "$19.99",
 
         timeTitle: "29 days later",
     timeCopy: "Your Netflix renewal is due tomorrow.",
@@ -19801,7 +20524,7 @@ const SUBTRAZ_DEMO_DATA = {
 
     reminderHeading: "Netflix renews tomorrow.",
     emailSubject: "Netflix Premium renews tomorrow",
-    emailBody: "Review this subscription before your next ₱249 charge.",
+    emailBody: "Review this subscription before your next $19.99 charge.",
     pushReminderTitle: "Netflix renews tomorrow",
     pushReminderBody: "Tap to review before the next charge.",
 
@@ -19814,7 +20537,7 @@ const SUBTRAZ_DEMO_DATA = {
   trial: {
     name: "CapCut Pro",
     logo: "https://www.google.com/s2/favicons?domain=capcut.com&sz=128",
-    amount: "₱299",
+    amount: "$9.99",
     status: "Trial",
     billingLabel: "Trial end date",
     billingDate: "May 31",
@@ -19822,14 +20545,14 @@ const SUBTRAZ_DEMO_DATA = {
     processingTitle: "Starting your free trial...",
     processingCopy: "Activating your 7-day CapCut Pro trial.",
     processingPlan: "CapCut Pro - 7-day trial",
-    processingPrice: "₱0 today",
+    processingPrice: "$0 today",
     processingStatus: "Setting up your trial",
     confirmedTitle: "Trial activated",
     confirmedCopy: "Your CapCut Pro trial is ready.",
     confirmedStatus: "Trial confirmation sent",
 
     pushTitle: "CapCut Pro trial detected",
-    pushCopy: "Tap to track your trial before ₱299 billing starts.",
+    pushCopy: "Tap to track your trial before $9.99 billing starts.",
     emailAlertCopy: "CapCut Pro trial was found. Tap to track the end date.",
 
     trackedTitle: "Your CapCut trial is tracked.",
@@ -19838,7 +20561,7 @@ const SUBTRAZ_DEMO_DATA = {
     statOneLabel: "Trial ends",
     statOneValue: "May 31",
     statTwoLabel: "Charge after trial",
-    statTwoValue: "₱299",
+    statTwoValue: "$9.99",
 
         timeTitle: "6 days later",
     timeCopy: "Your CapCut trial ends tomorrow.",
@@ -19846,7 +20569,7 @@ const SUBTRAZ_DEMO_DATA = {
 
     reminderHeading: "Your CapCut trial ends tomorrow.",
     emailSubject: "CapCut Pro trial ends tomorrow",
-    emailBody: "Review this trial before you are charged ₱299.",
+    emailBody: "Review this trial before you are charged $9.99.",
     pushReminderTitle: "CapCut trial ends tomorrow",
     pushReminderBody: "Tap to cancel before the paid plan begins.",
 
@@ -20056,16 +20779,25 @@ function startSubtrazDemoTimeJump() {
 }
 
 function bindMobileOnboardingIntro() {
-  const intro = document.getElementById("subtrazMobileOnboarding");
-  const track = document.getElementById("scDemoTrack");
+    const intro = document.getElementById("subtrazMobileOnboarding");
+    const track = document.getElementById("scDemoTrack");
 
-  if (!intro || !track || mobileOnboardingBound) return;
+    if (!intro || !track || mobileOnboardingBound) return;
 
-  mobileOnboardingBound = true;
-  applySubtrazDemoPath("subscription");
-  showSubtrazDemoScreen("choice");
+    mobileOnboardingBound = true;
+    applySubtrazDemoPath("subscription");
+    showSubtrazDemoScreen("intro");
 
   intro.addEventListener("click", event => {
+    const advanceButton = event.target.closest("[data-demo-advance]");
+    if (advanceButton) {
+      event.preventDefault();
+      const nextScreen = advanceButton.dataset.demoAdvance;
+      unlockSubtrazDemoScreen(nextScreen);
+      showSubtrazDemoScreen(nextScreen);
+      return;
+    }
+
     const planButton = event.target.closest("[data-demo-path]");
 
     if (planButton) {
@@ -20124,24 +20856,32 @@ function bindMobileOnboardingIntro() {
 
   let touchStartX = 0;
   let touchStartY = 0;
+  let touchTracking = false;
 
   track.addEventListener("touchstart", event => {
     if (subtrazDemoProcessing || subtrazDemoTimeJumpPlaying) return;
 
-    touchStartX = event.touches?.[0]?.clientX || 0;
-    touchStartY = event.touches?.[0]?.clientY || 0;
+    const touch = event.touches && event.touches[0];
+    if (!touch) return;
+
+    touchTracking = true;
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
   }, { passive: true });
 
   track.addEventListener("touchend", event => {
-    if (subtrazDemoProcessing || subtrazDemoTimeJumpPlaying) return;
+    if (!touchTracking || subtrazDemoProcessing || subtrazDemoTimeJumpPlaying) return;
 
-    const endX = event.changedTouches?.[0]?.clientX || 0;
-    const endY = event.changedTouches?.[0]?.clientY || 0;
-    const deltaX = endX - touchStartX;
-    const deltaY = endY - touchStartY;
+    touchTracking = false;
 
-    if (Math.abs(deltaX) < 45) return;
-    if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+    const touch = event.changedTouches && event.changedTouches[0];
+    if (!touch) return;
+
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
+
+    if (Math.abs(deltaX) < 48) return;
+    if (Math.abs(deltaX) <= Math.abs(deltaY)) return;
 
     if (deltaX < 0 && mobileOnboardingIndex < mobileOnboardingMaxUnlocked) {
       setMobileOnboardingSlide(mobileOnboardingIndex + 1);
@@ -20151,6 +20891,10 @@ function bindMobileOnboardingIntro() {
     if (deltaX > 0 && mobileOnboardingIndex > 0) {
       setMobileOnboardingSlide(mobileOnboardingIndex - 1);
     }
+  }, { passive: true });
+
+  track.addEventListener("touchcancel", () => {
+    touchTracking = false;
   }, { passive: true });
 }
 
@@ -23127,10 +23871,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 <script>
 
 const pcExplainData = {
+  intro: {
+    label: "Intro",
+    title: "Welcome to Subtraz",
+    copy: "See how Receipt Auto-Fill and Renewal Reminders work."
+  },
   checkout: {
     label: "Step 1",
-    title: "Start with a sample purchase",
-    copy: "Choose a subscription or free trial to see how Subtraz responds."
+    title: "Choose a purchase",
+    copy: "Select a sample subscription."
   },
   processing: {
     label: "Step 2",
@@ -23198,6 +23947,7 @@ function updatePcExplanation(sceneName) {
   let timeJumpTimer = null;
 
   const sceneProgress = {
+    intro: "intro",
     checkout: "checkout",
     processing: "checkout",
     receipt: "receipt",
@@ -23212,8 +23962,8 @@ function updatePcExplanation(sceneName) {
       logo: "https://www.google.com/s2/favicons?domain=netflix.com&sz=128",
       name: "Netflix Premium",
       type: "Streaming subscription",
-      price: "₱249",
-      planPrice: "₱249 / month",
+      price: "$19.99",
+      planPrice: "$19.99 / month",
 
       processingTitle: "Processing payment...",
       processingCopy: "Confirming your Netflix Premium subscription.",
@@ -23222,11 +23972,11 @@ function updatePcExplanation(sceneName) {
 
       receiptSender: "Netflix",
       receiptSubject: "Your Netflix Premium receipt",
-      receiptDetail: "₱249 paid today",
+      receiptDetail: "$19.99 paid today",
       alertTitle: "Netflix receipt detected",
       alertCopy: "Click to open auto-filled subscription.",
 
-      proofCopy: "₱249 paid today - monthly plan",
+      proofCopy: "$19.99 paid today - monthly plan",
       formDateLabel: "Next billing",
       formDate: "Jun 24",
 
@@ -23239,7 +23989,7 @@ function updatePcExplanation(sceneName) {
       timeCopy: "Your Netflix renewal is due tomorrow.",
 
       reminderTitle: "Netflix renews tomorrow.",
-      reminderCopy: "Review this subscription before your next ₱249 charge.",
+      reminderCopy: "Review this subscription before your next $19.99 charge.",
       decisionStatus: "Active - renews tomorrow",
       decisionAction: "Cancel before renewal"
     },
@@ -23249,8 +23999,8 @@ function updatePcExplanation(sceneName) {
       logo: "https://www.google.com/s2/favicons?domain=capcut.com&sz=128",
       name: "CapCut Pro",
       type: "Video editing - 7-day trial",
-      price: "₱299",
-      planPrice: "₱0 today",
+      price: "$9.99",
+      planPrice: "$0 today",
 
       processingTitle: "Starting your free trial...",
       processingCopy: "Activating your 7-day CapCut Pro trial.",
@@ -23259,7 +24009,7 @@ function updatePcExplanation(sceneName) {
 
       receiptSender: "CapCut",
       receiptSubject: "Your CapCut Pro trial confirmation",
-      receiptDetail: "7-day free trial - ₱299 after trial",
+      receiptDetail: "7-day free trial - $9.99 after trial",
       alertTitle: "CapCut trial detected",
       alertCopy: "Click to track it before billing starts.",
 
@@ -23276,7 +24026,7 @@ function updatePcExplanation(sceneName) {
       timeCopy: "Your CapCut trial ends tomorrow.",
 
       reminderTitle: "Your CapCut trial ends tomorrow.",
-      reminderCopy: "Review this trial before you are charged ₱299.",
+      reminderCopy: "Review this trial before you are charged $9.99.",
       decisionStatus: "Trial - ends tomorrow",
       decisionAction: "Cancel before billing starts"
     }
@@ -23319,7 +24069,7 @@ function updatePcExplanation(sceneName) {
 
     setText("[data-pc-processing-title]", data.processingTitle);
     setText("[data-pc-processing-copy]", data.processingCopy);
-    setText("[data-pc-processing-price]", currentPath === "trial" ? "₱0 today" : data.price);
+    setText("[data-pc-processing-price]", currentPath === "trial" ? "$0 today" : data.price);
 
     setText("[data-pc-receipt-sender]", data.receiptSender);
     setText("[data-pc-receipt-subject]", data.receiptSubject);
@@ -23357,8 +24107,8 @@ function updatePcExplanation(sceneName) {
       scene.classList.toggle("active", scene.dataset.pcScene === sceneName);
     });
 
-    const activeProgress = sceneProgress[sceneName] || "checkout";
-    const order = ["checkout", "receipt", "tracked", "reminder"];
+    const activeProgress = sceneProgress[sceneName] || "intro";
+    const order = ["intro", "checkout", "receipt", "tracked", "reminder"];
     const activeIndex = order.indexOf(activeProgress);
 
     progressDots.forEach(dot => {
@@ -23375,7 +24125,7 @@ function updatePcExplanation(sceneName) {
     clearTimers();
     stage.classList.remove("is-processing-confirmed");
     renderPath(path || "subscription");
-    showScene("checkout");
+    showScene("intro");
   }
 
   function startPurchase(path) {
@@ -23408,6 +24158,13 @@ function updatePcExplanation(sceneName) {
   }
 
   stage.addEventListener("click", event => {
+    const advanceButton = event.target.closest("[data-pc-advance]");
+    if (advanceButton) {
+      event.preventDefault();
+      showScene(advanceButton.dataset.pcAdvance);
+      return;
+    }
+
     const buyButton = event.target.closest("[data-pc-buy]");
     if (buyButton) {
       event.preventDefault();
@@ -23520,5 +24277,435 @@ function updatePcExplanation(sceneName) {
 })();
 </script>
 
+<style>
+/* ===== FINAL DEMO SIZE AND INTRO LAYOUT FIX ===== */
+
+@media (max-width: 768px) {
+  .scDemoScreen {
+    overscroll-behavior: none !important;
+  }
+
+  .scDemoPage {
+    padding-left: clamp(14px, 4vw, 20px) !important;
+    padding-right: clamp(14px, 4vw, 20px) !important;
+  }
+
+  /* Mobile intro uses the full screen, not a tall inner panel */
+  .scDemoIntroPage {
+    height: 100% !important;
+    min-height: 100% !important;
+    display: block !important;
+    overflow: hidden !important;
+    padding:
+      max(calc(env(safe-area-inset-top, 0px) + 60px), 68px)
+      clamp(18px, 5vw, 24px)
+      max(calc(env(safe-area-inset-bottom, 0px) + 18px), 20px) !important;
+    background:
+      radial-gradient(circle at 88% 8%, rgba(34, 197, 94, .25), transparent 32%),
+      radial-gradient(circle at 12% 92%, rgba(74, 222, 128, .11), transparent 35%),
+      linear-gradient(155deg, #031d15 0%, #052f21 52%, #073f2b 100%) !important;
+  }
+
+  .scDemoIntroLayout {
+    width: min(100%, 402px);
+    height: 100%;
+    min-height: 0;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .scDemoIntroBrandLine {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .scDemoIntroLogo {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 14px;
+    border: 1px solid rgba(134, 239, 172, .20);
+    background: rgba(255, 255, 255, .07);
+  }
+
+  .scDemoIntroLogo img {
+    width: 34px;
+    height: 34px;
+    display: block;
+    object-fit: contain;
+  }
+
+  .scDemoIntroBrandCopy strong {
+    display: block;
+    color: #ffffff !important;
+    font-size: 15px;
+    line-height: 1;
+    font-weight: 950;
+  }
+
+  .scDemoIntroBrandCopy small {
+    display: block;
+    margin-top: 5px;
+    color: rgba(220, 240, 228, .66) !important;
+    font-size: 10px;
+    font-weight: 750;
+  }
+
+  .scDemoIntroBadge {
+    min-height: 27px;
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 10px;
+    border: 1px solid rgba(134, 239, 172, .22);
+    border-radius: 999px;
+    background: rgba(34, 197, 94, .13);
+    color: #bbf7d0 !important;
+    font-size: 9px;
+    line-height: 1;
+    font-weight: 950;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .scDemoIntroMain {
+    margin-top: clamp(40px, 8svh, 72px);
+  }
+
+  .scDemoIntroLabel {
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 11px;
+    border: 1px solid rgba(134, 239, 172, .22);
+    border-radius: 999px;
+    background: rgba(34, 197, 94, .12);
+    color: #bbf7d0 !important;
+    font-size: 9px;
+    font-weight: 950;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+  }
+
+  .scDemoIntroMain h1 {
+    max-width: 340px !important;
+    margin: 16px 0 0 !important;
+    color: #ffffff !important;
+    font-size: clamp(32px, 9.2vw, 41px) !important;
+    line-height: .98 !important;
+    letter-spacing: -.06em !important;
+    font-weight: 950 !important;
+  }
+
+  .scDemoIntroFeatures {
+    display: grid;
+    gap: 11px;
+    margin-top: clamp(22px, 4svh, 30px);
+  }
+
+  .scDemoIntroFeature {
+    min-height: 66px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 13px;
+    border: 1px solid rgba(134, 239, 172, .15);
+    border-radius: 18px;
+    background: #0b3c2b;
+  }
+
+  .scDemoIntroFeatureIcon {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(134, 239, 172, .18);
+    border-radius: 13px;
+    background: rgba(34, 197, 94, .14);
+    color: #4ade80 !important;
+  }
+
+  .scDemoIntroFeatureIcon svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .scDemoIntroFeature strong {
+    display: block;
+    color: #ffffff !important;
+    font-size: 13px;
+    line-height: 1.15;
+    font-weight: 900;
+  }
+
+  .scDemoIntroFeature small {
+    display: block;
+    margin-top: 5px;
+    color: rgba(220, 240, 228, .66) !important;
+    font-size: 10.5px;
+    line-height: 1.2;
+    font-weight: 700;
+  }
+
+  .scDemoIntroFooter {
+    margin-top: auto;
+    padding-top: clamp(40px, 9svh, 88px);
+  }
+
+  .scDemoIntroButton {
+    position: relative;
+    min-height: 56px !important;
+    margin-top: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-radius: 17px !important;
+  }
+
+  .scDemoIntroButton b {
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .16);
+    color: #ffffff !important;
+    font-size: 14px;
+  }
+
+  .scDemoIntroButton .demo-guide-tooltip.bottom-arrow {
+    bottom: calc(100% + 30px) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+
+  .scDemoIntroButton .demo-guide-tooltip.bottom-arrow::after {
+    height: 18px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+
+  /* Keep all actual mobile slides centred */
+  .scDemoV2Header,
+  .scDemoV2Hero,
+  .scDemoV2SectionHead,
+  .scDemoV2Plans,
+  .scDemoProcessingContent,
+  .scDemoPhoneNotifications,
+  .scDemoPhoneHint,
+  .scDemoTrackedCard,
+  .scDemoTimeJumpContent,
+  .scDemoReminderStack,
+  .scDemoFinalSubscription {
+    width: min(100%, 420px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .scDemoV2Home,
+  .scDemoProcessingPage,
+  .scDemoPhoneAlertPage,
+  .scDemoFormPage,
+  .scDemoTrackedPage,
+  .scDemoTimeJumpPage,
+  .scDemoReminderPage,
+  .scDemoFinalPage {
+    padding-left: clamp(14px, 4vw, 20px) !important;
+    padding-right: clamp(14px, 4vw, 20px) !important;
+  }
+}
+
+/* Short phone height */
+@media (max-width: 768px) and (max-height: 650px) {
+  .scDemoIntroPage {
+    padding-top: max(calc(env(safe-area-inset-top, 0px) + 50px), 56px) !important;
+    padding-bottom: 12px !important;
+  }
+
+  .scDemoIntroLogo {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+  }
+
+  .scDemoIntroLogo img {
+    width: 29px;
+    height: 29px;
+  }
+
+  .scDemoIntroMain {
+    margin-top: 18px;
+  }
+
+  .scDemoIntroMain h1 {
+    margin-top: 11px !important;
+    font-size: 29px !important;
+  }
+
+  .scDemoIntroFeatures {
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .scDemoIntroFeature {
+    min-height: 54px;
+    padding: 9px 11px;
+  }
+
+  .scDemoIntroFeatureIcon {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+  }
+
+  .scDemoIntroFooter {
+    padding-top: 24px;
+  }
+
+  .scDemoIntroButton {
+    min-height: 49px !important;
+  }
+}
+
+/* PC demo sizing for smaller laptop windows and wide desktop views */
+@media (min-width: 769px) {
+  .pcFlowScene.pcFlowIntroScene.active {
+    padding: clamp(14px, 2vw, 26px) !important;
+  }
+
+  .pcIntroCard {
+    padding: clamp(18px, 2.3vw, 28px) !important;
+  }
+
+  .pcIntroCard h2 {
+    font-size: clamp(29px, 3vw, 40px) !important;
+  }
+
+  .pcIntroFeatures {
+    margin-top: clamp(17px, 2.5vh, 28px) !important;
+  }
+}
+
+@media (min-width: 769px) and (max-height: 640px) {
+  .pcIntroKicker {
+    margin-top: 16px !important;
+  }
+
+  .pcIntroCard h2 {
+    margin-top: 10px !important;
+    font-size: 29px !important;
+  }
+
+  .pcIntroCopy {
+    margin-top: 8px !important;
+  }
+
+  .pcIntroFeatures {
+    margin-top: 14px !important;
+  }
+
+  .pcIntroFeature {
+    min-height: 62px !important;
+    padding: 10px !important;
+  }
+
+  .pcIntroStart {
+    min-height: 46px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .scDemoChoiceGuide {
+    position: relative;
+    width: fit-content;
+    min-height: 31px;
+    margin: 0 auto 39px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    border: 1px solid rgba(34, 197, 94, .28);
+    border-radius: 999px;
+    background: #ecfdf3;
+    color: #15803d !important;
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 950;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    box-shadow:
+      0 10px 22px rgba(34, 197, 94, .10),
+      0 0 18px rgba(34, 197, 94, .10);
+  }
+
+  .scDemoChoiceGuide span {
+    width: 7px;
+    height: 7px;
+    display: block;
+    border-radius: 999px;
+    background: #22c55e;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, .34);
+    animation: scGuideDot 1.3s ease-in-out infinite;
+  }
+
+  .scDemoChoiceGuide b {
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 7px);
+    width: 2px;
+    height: 22px;
+    display: block;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%);
+    color: transparent !important;
+    font-size: 0 !important;
+    box-shadow: 0 0 11px rgba(34, 197, 94, .40);
+    animation: scChoiceArrowMove 1.35s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .scDemoChoiceGuide b::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -4px;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid #16a34a;
+    border-bottom: 2px solid #16a34a;
+    transform: translateX(-50%) rotate(45deg);
+    filter: drop-shadow(0 2px 4px rgba(34, 197, 94, .34));
+  }
+
+  @keyframes scChoiceArrowMove {
+    0%, 100% {
+      transform: translateX(-50%) translateY(0);
+      opacity: .84;
+    }
+
+    50% {
+      transform: translateX(-50%) translateY(4px);
+      opacity: 1;
+    }
+  }
+}
+
+</style>
+
+
 </body>
+
 </html>
