@@ -12949,10 +12949,10 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
     width: min(1150px, calc(100% - 48px)) !important;
     min-height: 0 !important;
     margin: 0 auto !important;
-    padding: 56px 0 18px !important;
+    padding: 50px 10px 25px !important;
     background: transparent !important;
     border: 0 !important;
-    border-radius: 0 !important;
+    border-radius: 20 !important;
     box-shadow: none !important;
     overflow: visible !important;
   }
@@ -13499,6 +13499,34 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
   .demo-guide-tooltip.top-arrow::after {
     height: 19px;
   }
+}
+</style>
+
+<style>
+/* ===== FIX UNREADABLE DROPDOWN OPTIONS IN DARK APP FORMS ===== */
+
+/* Closed dropdown field stays readable on dark background */
+select.input {
+  color: #f8fafc !important;
+}
+
+/* Open dropdown menu uses dark readable text on the browser's light menu */
+select.input option,
+select.input optgroup {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Placeholder or disabled first option */
+select.input option[value=""],
+select.input option:disabled {
+  color: #64748b !important;
+}
+
+/* Selected option inside the opened dropdown */
+select.input option:checked {
+  background-color: #dcfce7 !important;
+  color: #0f172a !important;
 }
 </style>
 
@@ -14681,7 +14709,40 @@ body.app-on.subtraz-dark-green #dashboard .dashHero .heroRow .addTop {
   </div>
 </div>
 
-<div class="modal" id="modal"><div class="modalBg" data-close></div><div class="modalCard"><div class="modalHead"><div><h3>Add subscription</h3><p>Unlimited subscriptions. Free plan includes 6 projects.</p></div><button class="close" data-close>×</button></div><form class="formGrid" id="subForm"><input class="input" id="subName" type="text" placeholder="Name, e.g. Netflix"><input class="input" id="subAmount" type="number" min="0" placeholder="Amount"><input class="input" id="subDate" type="date"><select class="input" id="subProject"><option>Personal</option><option>Business</option><option>Client A</option><option>School</option></select><select class="input" id="subStatus"><option>Active</option><option>Trial</option></select><button class="btn primary full" type="submit">+ Add subscription</button></form></div></div><div class="modal" id="projectModal">
+<div class="modal" id="modal"><div class="modalBg" data-close></div><div class="modalCard"><div class="modalHead"><div><h3>Add subscription</h3><p>Unlimited subscriptions. Free plan includes 6 projects.</p></div><button class="close" data-close>×</button></div><form class="formGrid" id="subForm">
+  <input class="input" id="subName" type="text" placeholder="Name, e.g. Netflix">
+
+  <input class="input" id="subAmount" type="number" min="0" step="0.01" placeholder="Amount">
+
+  <select class="input" id="subCurrency" aria-label="Currency" required>
+    <option value="">Currency</option>
+    <option value="USD">USD - $</option>
+    <option value="PHP">PHP - ₱</option>
+    <option value="AUD">AUD - A$</option>
+    <option value="CAD">CAD - CA$</option>
+    <option value="NZD">NZD - NZ$</option>
+    <option value="SGD">SGD - S$</option>
+    <option value="HKD">HKD - HK$</option>
+    <option value="EUR">EUR - €</option>
+    <option value="GBP">GBP - £</option>
+  </select>
+
+  <input class="input" id="subDate" type="date">
+
+  <select class="input" id="subProject">
+    <option>Personal</option>
+    <option>Business</option>
+    <option>Client A</option>
+    <option>School</option>
+  </select>
+
+  <select class="input" id="subStatus">
+    <option>Active</option>
+    <option>Trial</option>
+  </select>
+
+  <button class="btn primary full" type="submit">+ Add subscription</button>
+</form></div></div><div class="modal" id="projectModal">
   <div class="modalBg" data-close-project></div>
 
   <div class="modalCard">
@@ -16379,6 +16440,7 @@ async function loadBackendData() {
             id,
             name,
             amount,
+            currency_code,
             billing_date,
             category,
             project,
@@ -16409,6 +16471,7 @@ async function loadBackendData() {
           id: row.id,
           name: row.name,
           amount: Number(row.amount || 0),
+          currencyCode: row.currency_code || "",
           date: row.billing_date,
           category: row.category || "",
           project: row.project,
@@ -16585,6 +16648,7 @@ async function addSubscriptionToBackend(payload) {
           user_id: currentUser.id,
           name: payload.name,
           amount: payload.amount,
+          currency_code: payload.currencyCode || null,
           billing_date: payload.date,
           category: payload.category,
           project: payload.project,
@@ -16602,6 +16666,7 @@ async function addSubscriptionToBackend(payload) {
       id: stableId,
       name: payload.name,
       amount: Number(payload.amount || 0),
+      currencyCode: payload.currencyCode || "",
       date: payload.date,
       category: payload.category,
       project: payload.project,
@@ -16647,6 +16712,7 @@ async function updateSubscriptionInBackend(id, payload) {
       id,
       name,
       amount,
+      currency_code,
       billing_date,
       category,
       project,
@@ -16676,6 +16742,7 @@ async function updateSubscriptionInBackend(id, payload) {
     id: row.id,
     name: row.name,
     amount: Number(row.amount || 0),
+    currencyCode: row.currency_code || "",
     date: row.billing_date,
     category: row.category || "",
     project: row.project,
@@ -16988,13 +17055,18 @@ document.getElementById("subForm")?.addEventListener("submit", async event => {
   try {
     const name = val("subName").trim();
     const amount = Number(val("subAmount"));
+    const currencyCode = val("subCurrency").trim().toUpperCase();
     const date = val("subDate");
     const category = "";
     const project = val("subProject");
     const status = val("subStatus");
 
-    if (!name || !date || Number.isNaN(amount)) {
-      pop("Name, amount, and date are required.");
+    const existingCurrency = subs
+      .map(sub => String(sub.currencyCode || "").trim().toUpperCase())
+      .find(Boolean);
+
+    if (existingCurrency && currencyCode !== existingCurrency) {
+      pop(`This account uses ${existingCurrency}. Mixed currencies are not supported yet.`);
       return;
     }
 
@@ -17014,6 +17086,7 @@ document.getElementById("subForm")?.addEventListener("submit", async event => {
       id: "demo-" + Date.now(),
       name,
       amount,
+      currencyCode,
       date,
       category,
       project,
@@ -17578,6 +17651,14 @@ function trials() {
 
 function total() {
   return active().reduce((sum, sub) => sum + Number(sub.amount || 0), 0);
+}
+
+function accountCurrencyCode() {
+  const savedCurrency = subs
+    .map(sub => String(sub.currencyCode || "").trim().toUpperCase())
+    .find(Boolean);
+
+  return savedCurrency || "USD";
 }
 
 function upcoming() {
@@ -18212,11 +18293,8 @@ function renderDash() {
   html("dashBars", bars(rows("project", activeSubs)));
 }
 
-function mobileSubMoney(value) {
-  return "$" + Number(value || 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
+function mobileSubMoney(value, currencyCode) {
+  return money(value, currencyCode || accountCurrencyCode());
 }
 
 function mobileDaysUntil(dateString) {
@@ -18257,7 +18335,7 @@ function renderMobileSubs(filtered) {
 
   const visibleSubs = [...filtered].sort((a, b) => new Date(a.date) - new Date(b.date));
   const next = upcoming()[0];
-  const nextPill = next ? `<div class="mobileNextPill">▣ Next bill ${mobileDueText(next).toLowerCase()} (${mobileSubMoney(next.amount)})</div>` : "";
+  const nextPill = next ? `<div class="mobileNextPill">▣ Next bill ${mobileDueText(next).toLowerCase()} (${mobileSubMoney(next.amount, next.currencyCode)})</div>` : "";
 
   const groups = visibleSubs.reduce((acc, sub) => {
     const key = sub.category || "Other";
@@ -18284,7 +18362,11 @@ function renderMobileSubs(filtered) {
                 <span class="mobileSubMeta">${plan} · ${cycle}</span>
               </div>
               <div class="mobileSubRight">
-                <span class="mobileSubAmount">${sub.status === "Trial" ? "Trial" : mobileSubMoney(sub.amount)}</span>
+                <span class="mobileSubAmount">${
+  sub.status === "Trial"
+    ? mobileSubMoney(sub.amount, sub.currencyCode) + " after trial"
+    : mobileSubMoney(sub.amount, sub.currencyCode)
+}</span>
                 <span class="mobileSubDate ${dueSoon ? "dueSoon" : ""}">${dueSoon ? "• " : ""}${mobileDueText(sub)}</span>
               </div>
             </button>
@@ -18302,7 +18384,7 @@ function renderMobileSubs(filtered) {
 
     <div class="mobileSpendWrap">
       <div class="mobileSpendLabel">Total Monthly Spend</div>
-      <div class="mobileSpendValue"><span>$</span>${Number(total() || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+      <div class="mobileSpendValue">${money(total(), accountCurrencyCode())}</div>
       ${nextPill}
     </div>
 
@@ -18365,10 +18447,7 @@ function renderSubs() {
 }
 
 function exactMoney(value) {
-  return "$" + Number(value || 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
+  return money(value, accountCurrencyCode());
 }
 
 function cleanGroupName(value, fallback = "Other") {
@@ -18894,11 +18973,12 @@ function exportSubscriptionsCSV() {
     return;
   }
 
-  const headers = ["Name", "Amount", "Billing Date", "Category", "Project", "Status"];
+  const headers = ["Name", "Amount", "Currency", "Billing Date", "Category", "Project", "Status"];
 
   const rows = subs.map(sub => [
     sub.name,
     sub.amount,
+    sub.currencyCode || "",
     sub.date,
     sub.category,
     sub.project,
@@ -20258,7 +20338,11 @@ function item(sub) {
         <h4>${esc(sub.name)}</h4>
         <p>${sub.status === "Trial" ? "Trial ends" : "Renews"} ${fmt(sub.date)} · ${esc(sub.category || "-")} · ${esc(sub.project)}</p>
       </div>
-      <div class="money">${sub.status === "Trial" ? "Trial" : money(sub.amount)}</div>
+      <div class="money">${
+        sub.status === "Trial"
+          ? money(sub.amount, sub.currencyCode) + " after trial"
+          : money(sub.amount, sub.currencyCode)
+      }</div>
     </div>
   `;
 }
@@ -20314,8 +20398,35 @@ function val(id) {
   return document.getElementById(id)?.value || "";
 }
 
-function money(value) {
-  return "$" + Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
+function money(value, currencyCode) {
+  const amount = Number(value);
+
+  if (!Number.isFinite(amount)) {
+    return "Amount not set";
+  }
+
+  const code = String(currencyCode || accountCurrencyCode()).trim().toUpperCase();
+
+  const symbols = {
+    PHP: "₱",
+    USD: "$",
+    AUD: "A$",
+    CAD: "CA$",
+    NZD: "NZ$",
+    SGD: "S$",
+    HKD: "HK$",
+    EUR: "€",
+    GBP: "£"
+  };
+
+  const formatted = amount.toLocaleString(undefined, {
+    minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2
+  });
+
+  return symbols[code]
+    ? symbols[code] + formatted
+    : code + " " + formatted;
 }
 
 function fmt(dateString) {
@@ -22187,11 +22298,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     return {
       name: sub.serviceName || sub.name || "",
       amount: wholeNumberAmount(sub.amount || sub.price || ""),
+      currencyCode: String(sub.currencyCode || sub.currency_code || "").trim().toUpperCase(),
       date:
         validFutureBillingDate(sub.billingDate || sub.nextBilling) ||
         addNextBillingDateFromToday(sub.cycle),
       project: sub.project || "Personal",
-      status: sub.status || "Active"
+      status: sub.status === "Trial" ? "Trial" : "Active"
     };
   }
 
@@ -22278,6 +22390,18 @@ document.addEventListener('DOMContentLoaded', async function() {
       setFieldValue("subAmount", pending.amount, "input");
       setFieldValue("subDate", pending.date, "change");
 
+      const currencyField = document.getElementById("subCurrency");
+      if (currencyField) {
+        const wantedCurrency = String(pending.currencyCode || "").trim().toUpperCase();
+
+        const matchedCurrency = Array.from(currencyField.options).find(option =>
+          String(option.value || "").toUpperCase() === wantedCurrency
+        );
+
+        currencyField.value = matchedCurrency ? matchedCurrency.value : "";
+        currencyField.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+
       const projectField = document.getElementById("subProject");
       if (projectField) {
         const options = Array.from(projectField.options);
@@ -22289,10 +22413,16 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       const statusField = document.getElementById("subStatus");
       if (statusField) {
-        const options = Array.from(statusField.options);
-        const active = options.find(o => o.textContent.trim().toLowerCase() === "active");
+        const wantedStatus = pending.status === "Trial" ? "trial" : "active";
 
-        statusField.value = active ? active.value : (options[0]?.value || pending.status);
+        const matchedStatus = Array.from(statusField.options).find(option =>
+          option.textContent.trim().toLowerCase() === wantedStatus
+        );
+
+        statusField.value = matchedStatus
+          ? matchedStatus.value
+          : (statusField.options[0]?.value || "Active");
+
         statusField.dispatchEvent(new Event("change", { bubbles: true }));
       }
 

@@ -543,7 +543,9 @@ function buildGmailQuery() {
     "invoice",
     "charged",
     "premium",
-    "pro"
+    "pro",
+    "trial",
+    "\"free trial\""
   ].join(" OR ");
 
   return `(${fromQuery}) (${keywordQuery}) newer_than:30d`;
@@ -561,31 +563,37 @@ function parseEmailsForSubscriptions(messages) {
       const from = String(headers.from || "").toLowerCase();
       const subject = String(headers.subject || "").toLowerCase();
       const date = new Date(headers.date || Date.now());
+      const emailText = `${subject}\n${body}`;
 
       const service = findServiceFromEmail(from, subject, body);
 
       if (!service) return null;
 
-      const amount = extractAmount(body);
-      const cycle = extractCycle(body);
-      const purchaseDate = extractPurchaseDate(body) || date;
+      const status = extractStatus(emailText);
+      const price = extractPrice(emailText, status);
+      const amount = price.amount;
+      const currencyCode = price.currencyCode;
+      const cycle = extractCycle(emailText);
+      const purchaseDate = extractPurchaseDate(emailText) || date;
 
       const billingDate =
-        extractBillingDate(body) ||
+        extractBillingDate(emailText) ||
         getNextBillingDateFromReceipt(purchaseDate, cycle);
 
       return {
-  gmailMessageId: msg.id || null,
-  service: service.id,
-  serviceName: service.name,
-  category: service.cat,
-  amount,
-  billingDate,
-  cycle,
-  emailDate: date,
-  from,
-  subject
-};
+        gmailMessageId: msg.id || null,
+        service: service.id,
+        serviceName: service.name,
+        category: service.cat,
+        amount,
+        currencyCode,
+        billingDate,
+        cycle,
+        status,
+        emailDate: date,
+        from,
+        subject
+      };
     })
     .filter(Boolean);
 }
@@ -632,21 +640,118 @@ function getBodyText(payload) {
   return text;
 }
 
-function extractAmount(text) {
+function extractStatus(text) {
   const cleanText = String(text || "");
 
-  const patterns = [
-    /(?:total|amount|charged|price|cost|payment|paid)[\s:]*\$?\s*([0-9]+(?:\.[0-9]{2})?)/i,
-    /\$\s*([0-9]+(?:\.[0-9]{2})?)/i,
-    /₱\s*([0-9,]+(?:\.[0-9]{2})?)/i
+  const trialPatterns = [
+    /\bfree\s+trial\b/i,
+    /\btrial\s+(?:has\s+)?started\b/i,
+    /\btrial\s+(?:ends|ending|expires)\b/i,
+    /\btrial\s+period\b/i,
+    /\bafter\s+(?:your\s+|the\s+)?trial\b/i,
+    /\b\d+\s*[- ]?day\s+(?:free\s+)?trial\b/i
   ];
 
-  for (const pattern of patterns) {
-    const match = cleanText.match(pattern);
-    if (match) return match[1].replace(/,/g, "");
-  }
+  return trialPatterns.some(pattern => pattern.test(cleanText))
+    ? "Trial"
+    : "Active";
+}
+
+function detectCurrencyCode(token) {
+  const cleanToken = String(token || "")
+    .replace(/\s+/g, "")
+    .toUpperCase();
+
+  if (cleanToken.includes("PHP") || cleanToken.includes("₱")) return "PHP";
+  if (cleanToken.includes("AUD") || cleanToken.includes("A$") || cleanToken.includes("AU$")) return "AUD";
+  if (cleanToken.includes("CAD") || cleanToken.includes("CA$")) return "CAD";
+  if (cleanToken.includes("NZD") || cleanToken.includes("NZ$")) return "NZD";
+  if (cleanToken.includes("SGD") || cleanToken.includes("S$")) return "SGD";
+  if (cleanToken.includes("HKD") || cleanToken.includes("HK$")) return "HKD";
+  if (cleanToken.includes("EUR") || cleanToken.includes("€")) return "EUR";
+  if (cleanToken.includes("GBP") || cleanToken.includes("£")) return "GBP";
+  if (cleanToken.includes("USD") || cleanToken.includes("US$")) return "USD";
+
+  /*
+    A plain dollar sign is not fully clear because several currencies use it.
+    Default to USD, then let the user review the auto-filled form.
+  */
+  if (cleanToken === "$") return "USD";
 
   return null;
+}
+
+function normaliseDetectedAmount(value) {
+  return String(value || "").replace(/,/g, "").trim() || null;
+}
+
+function extractPrice(text, status) {
+  const cleanText = String(text || "");
+
+  const money =
+    "((?:PHP|USD|AUD|CAD|NZD|SGD|HKD|EUR|GBP)\\s*|(?:US|AU|A|CA|NZ|S|HK)?\\$\\s*|[₱€£]\\s*)" +
+    "([0-9]+(?:,[0-9]{3})*(?:\\.[0-9]{1,2})?)";
+
+  if (status === "Trial") {
+    const trialPatterns = [
+      new RegExp(
+        "(?:next payment|next charge|charge after trial|charged after trial|price after trial)[\\s:]*" + money,
+        "i"
+      ),
+      new RegExp(
+        "(?:after\\s+(?:your\\s+|the\\s+)?trial)[^\\r\\n]{0,90}?" + money,
+        "i"
+      ),
+      new RegExp(
+        "(?:then\\s+(?:paid|charged))[^\\r\\n]{0,60}?" + money,
+        "i"
+      )
+    ];
+
+    for (const pattern of trialPatterns) {
+      const match = cleanText.match(pattern);
+
+      if (match) {
+        return {
+          amount: normaliseDetectedAmount(match[2]),
+          currencyCode: detectCurrencyCode(match[1])
+        };
+      }
+    }
+
+    /*
+      Do not save today's zero-cost trial amount as the future charge.
+      The user can fill the charge manually if the email does not state it.
+    */
+    return {
+      amount: null,
+      currencyCode: null
+    };
+  }
+
+  const activePatterns = [
+    new RegExp(
+      "(?:total|amount|charged|price|cost|payment|paid)[\\s:]*" + money,
+      "i"
+    ),
+    new RegExp(money, "i")
+  ];
+
+  for (const pattern of activePatterns) {
+    const match = cleanText.match(pattern);
+
+    if (match) {
+      return {
+        amount: normaliseDetectedAmount(match[2]),
+        currencyCode: detectCurrencyCode(match[1])
+      };
+    }
+  }
+
+  return {
+    amount: null,
+    currencyCode: null
+  };
 }
 
 function dateForInput(value) {
@@ -1057,8 +1162,10 @@ async function createReceiptAutofillLink(options) {
       google_user_id: options.googleUserId || null,
       service_name: detection.serviceName,
       amount: detection.amount || null,
+      currency_code: detection.currencyCode || null,
       billing_date: detection.billingDate || null,
       cycle: detection.cycle || "monthly",
+      status: detection.status === "Trial" ? "Trial" : "Active",
       category: detection.category || null,
       source: detection.source || "gmail",
       expires_at: expiresAt
@@ -1156,8 +1263,10 @@ app.get("/api/receipt-autofill/open/:token", async (req, res) => {
         id,
         service_name,
         amount,
+        currency_code,
         billing_date,
         cycle,
+        status,
         category,
         source,
         expires_at,
@@ -1199,8 +1308,10 @@ app.get("/api/receipt-autofill/open/:token", async (req, res) => {
       detection: {
         serviceName: link.service_name,
         amount: link.amount,
+        currencyCode: link.currency_code || null,
         billingDate: link.billing_date,
         cycle: link.cycle || "monthly",
+        status: link.status === "Trial" ? "Trial" : "Active",
         category: link.category,
         source: link.source || "gmail"
       }
@@ -2175,13 +2286,52 @@ function escapeReceiptEmailHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+function formatDetectedMoney(amount, currencyCode) {
+  const numericAmount = Number(amount);
+
+  if (!Number.isFinite(numericAmount)) {
+    return "";
+  }
+
+  const cleanCode = String(currencyCode || "").trim().toUpperCase();
+
+  const currencySymbols = {
+    PHP: "₱",
+    USD: "$",
+    AUD: "A$",
+    CAD: "CA$",
+    NZD: "NZ$",
+    SGD: "S$",
+    HKD: "HK$",
+    EUR: "€",
+    GBP: "£"
+  };
+
+  const formattedAmount = numericAmount.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  if (currencySymbols[cleanCode]) {
+    return currencySymbols[cleanCode] + formattedAmount;
+  }
+
+  if (cleanCode) {
+    return cleanCode + " " + formattedAmount;
+  }
+
+  return formattedAmount;
+}
+
 async function sendReceiptEmailAlert(toEmail, detection, autofillUrl) {
   const serviceName = escapeReceiptEmailHtml(
     detection.serviceName || "Subscription"
   );
 
   const amount = detection.amount
-    ? "$" + escapeReceiptEmailHtml(detection.amount)
+    ? escapeReceiptEmailHtml(
+        formatDetectedMoney(detection.amount, detection.currencyCode)
+      )
     : "Not found";
 
   const billingDate = detection.billingDate
@@ -2265,11 +2415,11 @@ function cleanReminderSubject(value) {
     .slice(0, 160);
 }
 
-function formatReminderAmount(value) {
+function formatReminderAmount(value, currencyCode) {
   const amount = Number(value || 0);
 
   return Number.isFinite(amount) && amount > 0
-    ? `$${amount.toFixed(2)}`
+    ? formatDetectedMoney(amount, currencyCode)
     : "";
 }
 
@@ -2304,7 +2454,7 @@ async function sendSubscriptionReminderEmailAlert(
   const rawName =
     String(subscription.name || "Subscription").trim() || "Subscription";
 
-  const amountText = formatReminderAmount(subscription.amount);
+  const amountText = formatReminderAmount(subscription.amount, subscription.currency_code);
   const dateText = formatReminderDate(subscription.billing_date);
 
   const timingText =
@@ -2452,6 +2602,7 @@ app.post("/api/reminders/test-send", localTestOnly, async (req, res) => {
         user_id,
         name,
         amount,
+        currency_code,
         billing_date,
         status,
         reminder_enabled,
@@ -2557,6 +2708,7 @@ app.post("/api/reminders/test-push", localTestOnly, async (req, res) => {
         user_id,
         name,
         amount,
+        currency_code,
         billing_date,
         status,
         push_reminders_enabled,
@@ -2900,6 +3052,7 @@ async function runDueRemindersForUser(userId, options = {}) {
       user_id,
       name,
       amount,
+      currency_code,
       billing_date,
       status,
       reminder_enabled,
@@ -3303,6 +3456,7 @@ async function runUrgentTrialPushForSubscription(
       user_id,
       name,
       amount,
+      currency_code,
       billing_date,
       status,
       reminder_enabled,
@@ -3954,8 +4108,13 @@ async function scanAndNotifyUser(userId) {
 
       if (canSendPush) {
         try {
-          const amountStr = detection.amount ? ` · $${detection.amount}` : "";
-          const dateStr = detection.billingDate ? ` · ${detection.billingDate}` : "";
+          const amountStr = detection.amount
+            ? ` · ${formatDetectedMoney(detection.amount, detection.currencyCode)}`
+            : "";
+
+          const dateStr = detection.billingDate
+            ? ` · ${detection.billingDate}`
+            : "";
 
           await webpush.sendNotification(
             JSON.parse(pushData.subscription),
@@ -3965,8 +4124,10 @@ async function scanAndNotifyUser(userId) {
               detection: {
                 serviceName: detection.serviceName,
                 amount: detection.amount,
+                currencyCode: detection.currencyCode || null,
                 billingDate: detection.billingDate,
                 cycle: detection.cycle || "monthly",
+                status: detection.status === "Trial" ? "Trial" : "Active",
                 category: detection.category,
                 source: "gmail"
               }
@@ -3996,8 +4157,10 @@ async function scanAndNotifyUser(userId) {
             detection: {
               serviceName: detection.serviceName,
               amount: detection.amount,
+              currencyCode: detection.currencyCode || null,
               billingDate: detection.billingDate,
               cycle: detection.cycle || "monthly",
+              status: detection.status === "Trial" ? "Trial" : "Active",
               category: detection.category,
               source: "gmail"
             }
